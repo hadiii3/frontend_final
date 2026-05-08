@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Assistant | Galala Uni</title>
+  <meta name="description" content="Galala Uni AI Academic Assistant — ask about courses, deadlines, campus policy, and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/globals.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/chatbot.css" />
+  <style>
+    .chatbot-portal-layout {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      padding-top: calc(80px + var(--space-6));
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body style="background:var(--col-surface-low);">
+
+  <!-- NAV (dark) -->
+  <header class="nav-glass nav-dark" id="main-nav">
+    <div class="nav-inner">
+      <a href="dashboard.html" class="brand">
+        <img src="../gu_logo.png" alt="Galala Uni Logo" class="brand-logo" style="height:36px; width:auto; border-radius:4px;" />
+      </a>
+      <nav class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="chatbot.html" class="active">AI Assistant</a>
+        <a href="vehicle.html">Vehicle</a>
+        <a href="help.html">Help</a>
+      </nav>
+      <div class="nav-student-info">
+        <div class="nav-student-avatar">HA</div>
+        <span class="nav-student-name">Hadi Abdelaziz</span>
+        <a href="../index.html" class="btn btn-ghost" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
+      </div>
+      <button class="nav-mobile-toggle" aria-label="Toggle menu" id="mobile-menu-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="mobile-menu">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chatbot.html">AI Assistant</a>
+      <a href="vehicle.html">Vehicle</a>
+      <a href="help.html">Help</a>
+      <a href="../index.html">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="chatbot-portal-layout">
+
+    <!-- CHAT WINDOW -->
+    <div class="chat-window">
+      <!-- Header -->
+      <div class="chat-header" style="justify-content: center;">
+        <div class="chat-header-info" style="text-align: center;">
+          <div class="chat-header-name" style="font-size: 1.125rem;">Galala Uni Assistant</div>
+        </div>
+      </div>
+
+      <!-- Chat Body -->
+      <div class="chat-body" id="chat-body">
+
+        <!-- AI Greeting -->
+        <div class="msg msg-ai" data-time="Now">
+          <div class="msg-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          </div>
+          <div>
+            <div class="msg-bubble">
+              Hello, Alexandria! I'm your Galala Uni Academic Concierge. I can help you with <strong>course registration</strong>, <strong>deadlines</strong>, <strong>campus policy</strong>, and any other academic questions. How can I assist you today?
+            </div>
+            <div class="msg-time">Just now</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick reply chips -->
+      <div class="chat-chips" id="chat-chips">
+        <button class="chip" onclick="sendQuick(this)">Course registration help</button>
+        <button class="chip" onclick="sendQuick(this)">Upcoming deadlines</button>
+        <button class="chip" onclick="sendQuick(this)">Grade dispute process</button>
+        <button class="chip" onclick="sendQuick(this)">Campus parking rules</button>
+        <button class="chip" onclick="sendQuick(this)">Financial aid status</button>
+      </div>
+
+      <!-- Input area -->
+      <div class="chat-input-area">
+        <div class="chat-input-wrap">
+          <textarea
+            class="chat-textarea"
+            id="chat-input"
+            placeholder="Ask anything about your courses, campus, or academic journey…"
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+          <button class="chat-send" id="send-btn" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="chat-disclaimer">
+        Galala Uni AI can make mistakes. Check important information with the Academic Office.
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/nav.js"></script>
+  <script src="../js/chatbot.js"></script>
+</body>
+</html>

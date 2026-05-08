@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admission Chatbot | Galala Uni</title>
+  <meta name="description" content="Talk to the Galala Uni AI Admission Concierge. Get instant answers about programs, deadlines, scholarships, and visa processes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/globals.css" />
+  <link rel="stylesheet" href="../css/chatbot.css" />
+  <style>
+    /* Public chatbot layout overrides */
+    .public-chatbot-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: var(--space-6);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      padding-top: calc(80px + var(--space-6));
+      min-height: 100vh;
+    }
+    .faq-panel {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    .faq-panel-title {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--col-primary);
+      margin-bottom: var(--space-2);
+    }
+    .faq-chip {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: #fff;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      border: 1.5px solid var(--col-outline);
+      transition: all var(--trs-fast);
+      text-align: left;
+      font-size: .875rem;
+      font-weight: 500;
+      color: var(--col-on-surface);
+      width: 100%;
+    }
+    .faq-chip:hover {
+      border-color: var(--col-secondary);
+      background: #f0f7ff;
+      transform: translateX(3px);
+    }
+    .faq-chip svg {
+      width: 16px; height: 16px;
+      color: var(--col-secondary);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .public-nav-actions { display: flex; align-items: center; gap: var(--space-3); }
+    @media (max-width: 768px) {
+      .public-chatbot-layout { grid-template-columns: 1fr; padding-top: calc(80px + var(--space-4)); }
+      .faq-panel { display: none; }
+    }
+  </style>
+</head>
+<body style="background:var(--col-surface-low);">
+
+  <!-- NAV — public / guest -->
+  <header class="nav-glass" id="main-nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="brand">
+        <img src="../gu_logo.png" alt="Galala Uni Logo" class="brand-logo" style="height:36px; width:auto; border-radius:4px;" />
+      </a>
+      <nav class="nav-links">
+        <a href="../index.html#journey">Admissions</a>
+      </nav>
+      <div class="public-nav-actions">
+        <a href="login.html" class="btn btn-primary">Student Login</a>
+      </div>
+      <button class="nav-mobile-toggle" aria-label="Toggle menu" id="mobile-menu-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="mobile-menu">
+      <a href="../index.html#journey">Admissions</a>
+      <a href="login.html" class="btn btn-primary">Student Login</a>
+    </div>
+  </header>
+
+  <div class="public-chatbot-layout">
+
+    <!-- LEFT: FAQ Panel -->
+    <aside class="faq-panel">
+      <div class="faq-panel-title">Frequent Questions</div>
+      <p style="font-size:.8125rem;color:var(--col-on-muted);margin-bottom:var(--space-2);">Click any question to ask the chatbot</p>
+
+      <button class="faq-chip" onclick="askFAQ(this, 'What are the application deadlines for Fall 2026?')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+        Application deadlines for Fall 2026
+      </button>
+
+      <button class="faq-chip" onclick="askFAQ(this, 'What scholarship options are available?')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Scholarship options available
+      </button>
+
+      <button class="faq-chip" onclick="askFAQ(this, 'What are the visa requirements for international students?')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/></svg>
+        Visa requirements for international students
+      </button>
+
+      <button class="faq-chip" onclick="askFAQ(this, 'What is the tuition fee for undergraduate programs?')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Tuition fees for undergraduate programs
+      </button>
+
+      <div style="margin-top:var(--space-4);padding:var(--space-4);background:#fff;border-radius:var(--radius-md);border:1.5px solid var(--col-outline);">
+        <div style="font-size:.8125rem;font-weight:700;color:var(--col-primary);margin-bottom:var(--space-2);">Already a student?</div>
+        <a href="login.html" class="btn btn-primary btn-full btn-sm">Sign In to Portal</a>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Chat Window -->
+    <div class="chat-window">
+      <!-- Header -->
+      <div class="chat-header" style="justify-content: center;">
+        <div class="chat-header-info" style="text-align: center;">
+          <div class="chat-header-name" style="font-size: 1.125rem;">Galala Uni Admission Chatbot</div>
+        </div>
+      </div>
+
+      <!-- Chat Body -->
+      <div class="chat-body" id="chat-body">
+
+        <!-- AI Greeting -->
+        <div class="msg msg-ai" data-time="Now">
+          <div class="msg-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          </div>
+          <div>
+            <div class="msg-bubble">
+              Good day! I am the Galala Uni Admission Assistant. How may I help you today? You can ask me about <strong>application deadlines</strong>, <strong>scholarship tiers</strong>, <strong>program requirements</strong>, or the <strong>International Student visa process</strong>. Or pick a question from the panel on the left.
+            </div>
+            <div class="msg-time">Just now</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick reply chips -> Removed to avoid duplicating the FAQs on the left -->
+
+      <!-- Input area -->
+      <div class="chat-input-area">
+        <div class="chat-input-wrap">
+          <textarea
+            class="chat-textarea"
+            id="chat-input"
+            placeholder="Ask anything about admissions, programs, scholarships…"
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+          <button class="chat-send" id="send-btn" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="chat-disclaimer">
+        Galala Uni AI can make mistakes. Check important information with the Admissions Office.
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/nav.js"></script>
+  <script src="../js/chatbot.js"></script>
+  <script>
+    function askFAQ(btn, question) {
+      const input = document.getElementById('chat-input');
+      input.value = question;
+      input.dispatchEvent(new Event('input'));
+      // Trigger send
+      document.getElementById('send-btn').click();
+    }
+  </script>
+</body>
+</html>

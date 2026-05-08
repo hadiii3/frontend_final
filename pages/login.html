@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Login | Galala Uni</title>
+  <meta name="description" content="Sign in to your Galala Uni student portal to access your dashboard, academic records, and campus tools." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/globals.css?v=3" />
+  <link rel="stylesheet" href="../css/dashboard.css?v=3" />
+  <style>
+    /* Hide native browser password reveal icons (Edge/Chrome) */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear { display: none; }
+    input[type="password"]::-webkit-reveal { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="login-page-centered">
+
+    <div class="login-float-card">
+
+      <!-- Brand -->
+      <div style="text-align:center;margin-bottom:var(--space-8);">
+        <a href="../index.html" class="brand" style="display:inline-flex;justify-content:center;">
+          <img src="../gu_logo.png" alt="Galala Uni Logo" class="brand-logo" style="height:36px; width:auto; border-radius:4px;" />
+        </a>
+      </div>
+
+      <h1 class="login-form-title" style="text-align:center;">Welcome back.</h1>
+      <p class="login-form-subtitle" style="text-align:center;">Sign in with your university ID and password.</p>
+
+      <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="student-id">University ID</label>
+          <input
+            class="form-input"
+            type="text"
+            id="student-id"
+            name="student_id"
+            placeholder="e.g., 202100123"
+            autocomplete="username"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div style="position:relative;">
+            <input
+              class="form-input"
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              style="padding-right:3rem;"
+              required
+            />
+            <button
+              type="button"
+              onclick="togglePwd()"
+              style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--col-on-muted);"
+              aria-label="Toggle password visibility"
+              id="pwd-toggle"
+            >
+              <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </button>
+          </div>
+        </div>
+
+
+        <div id="login-error" style="display:none;padding:var(--space-3) var(--space-4);background:#fee2e2;border-radius:var(--radius-md);color:#991b1b;font-size:.875rem;"></div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">
+          Sign In to Portal
+        </button>
+      </form>
+
+
+    </div>
+
+  </div>
+
+  <script src="../js/login.js?v=3"></script>
+</body>
+</html>

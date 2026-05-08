@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Access | Galala Uni</title>
+  <meta name="description" content="Manage your campus vehicle permissions." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/globals.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    /* Vehicle specific styles */
+    .veh-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-block: var(--space-2);
+      border-bottom: 1px dashed var(--col-outline);
+    }
+    .veh-detail-row:last-child { border-bottom: none; }
+    .veh-detail-label { font-size: .8125rem; font-weight: 600; color: var(--col-on-muted); }
+    .veh-detail-value { font-size: .875rem; font-weight: 500; color: var(--col-on-surface); }
+    
+    .plate-display {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-family: 'Inter', monospace;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: var(--col-primary);
+      text-transform: uppercase;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+      margin-bottom: var(--space-5);
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .plate-display::before {
+      content: "GALALA UNI";
+      position: absolute;
+      top: 4px;
+      left: 0;
+      right: 0;
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .plate-display.empty {
+      color: #94a3b8;
+      border-style: dashed;
+      background: #f1f5f9;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV (dark) -->
+  <header class="nav-glass nav-dark" id="main-nav">
+    <div class="nav-inner">
+      <a href="dashboard.html" class="brand">
+        <img src="../gu_logo.png" alt="Galala Uni Logo" class="brand-logo" style="height:36px; width:auto; border-radius:4px;" />
+      </a>
+      <nav class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="chatbot.html">AI Assistant</a>
+        <a href="vehicle.html" class="active">Vehicle</a>
+        <a href="help.html">Help</a>
+      </nav>
+      <div class="nav-student-info">
+        <div class="nav-student-avatar">HA</div>
+        <span class="nav-student-name">Hadi Abdelaziz</span>
+        <a href="../index.html" class="btn btn-ghost" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
+      </div>
+      <button class="nav-mobile-toggle" aria-label="Toggle menu" id="mobile-menu-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="mobile-menu">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chatbot.html">AI Assistant</a>
+      <a href="vehicle.html">Vehicle</a>
+      <a href="help.html">Help</a>
+      <a href="../index.html">Sign Out</a>
+    </div>
+  </header>
+
+  <!-- PAGE BODY -->
+  <div class="portal-page">
+    <div class="portal-content">
+      <div class="dash-header">
+        <div class="dash-header-top">
+          <div>
+            <h1 class="dash-title">Vehicle Access</h1>
+            <p class="dash-subtitle">Manage your campus parking permissions and request vehicle access.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6);">
+
+        <!-- Active Registration Card -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>
+              Active Vehicle Access
+            </div>
+            <span class="badge badge-green">Approved Permit</span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:var(--space-4); margin-bottom:var(--space-5);">
+            <div class="veh-detail-row">
+              <span class="veh-detail-label">License Plate</span>
+              <span class="veh-detail-value" style="font-family:monospace;letter-spacing:1px;font-size:1.0625rem;color:var(--col-primary);font-weight:700;">XYZ 8992</span>
+            </div>
+            <div class="veh-detail-row">
+              <span class="veh-detail-label">Make &amp; Model</span>
+              <span class="veh-detail-value">Toyota Corolla</span>
+            </div>
+            <div class="veh-detail-row">
+              <span class="veh-detail-label">Color</span>
+              <span class="veh-detail-value">Silver</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Request Vehicle Access Form -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+              Request Vehicle Access
+            </div>
+          </div>
+
+          <p style="font-size: .875rem; color: var(--col-on-muted); margin-bottom: var(--space-5); line-height: 1.5;">
+            Submit a request to grant access for a vehicle. All requests are manually reviewed by Campus Security within 48 hours. Upon approval, you will receive a digital permit.
+          </p>
+
+          <div class="plate-display empty" id="plate-display">ABC · 1234</div>
+
+          <form id="vehicle-form" style="display: flex; flex-direction: column; gap: var(--space-4);" onsubmit="submitVehicle(event)">
+            <div class="form-group">
+              <label class="form-label" for="plate">License Plate Number</label>
+              <input type="text" id="plate" class="form-input" placeholder="e.g. ABC 1234" required oninput="updatePlate(this.value)" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+              <div class="form-group">
+                <label class="form-label" for="make">Make</label>
+                <input type="text" id="make" class="form-input" placeholder="e.g. Honda" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="model">Model</label>
+                <input type="text" id="model" class="form-input" placeholder="e.g. Civic" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="color">Vehicle Color</label>
+              <input type="text" id="color" class="form-input" placeholder="e.g. Black" required />
+            </div>
+
+            <div id="vehicle-success" style="display:none; font-size:.875rem; font-weight:600; text-align:center; padding:var(--space-3); border-radius:var(--radius-md); margin-top:var(--space-2); background: #f0fdf4; color: #166534;">Request submitted successfully!</div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submit-btn" style="margin-top: var(--space-2);">
+              Submit Access Request
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/nav.js"></script>
+  <script src="../js/vehicle.js"></script>
+</body>
+</html>
