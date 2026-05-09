@@ -28,7 +28,7 @@
       <div class="nav-student-info">
         <div class="nav-student-avatar"></div>
         <span class="nav-student-name"></span>
-        <a href="#" class="btn btn-ghost logout-btn" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
+        <a href="#" onclick="handleLogout(event)" class="btn btn-ghost logout-btn" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
       </div>
       <button class="nav-mobile-toggle" aria-label="Toggle menu" id="mobile-menu-btn">
         <span></span><span></span><span></span>
@@ -39,7 +39,7 @@
       <a href="chatbot.html">AI Assistant</a>
       <a href="vehicle.html">Vehicle</a>
       <a href="help.html">Help</a>
-      <a href="#" class="logout-btn">Sign Out</a>
+      <a href="#" onclick="handleLogout(event)" class="logout-btn">Sign Out</a>
     </div>
   </header>
 
@@ -181,7 +181,7 @@
     </div>
   </div>
 
-  <script src="../js/nav.js"></script>
-  <script src="../js/dashboard.js"></script>
+  <script src="../js/nav.js?v=2"></script>
+  <script src="../js/dashboard.js?v=2"></script>
 </body>
 </html>

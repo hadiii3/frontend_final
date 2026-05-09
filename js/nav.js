@@ -17,33 +17,30 @@
     }
   });
 
-  /* Logout functionality */
-  const logoutBtns = document.querySelectorAll('.logout-btn');
-  logoutBtns.forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-
-      const token = localStorage.getItem('student_token');
-      if (token) {
-        try {
-          await fetch('https://api.eightyeightevents.me/api/v1/student/logout', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json',
-            },
-          });
-        } catch (error) {
-          console.error('Logout error:', error);
-        }
-      }
-
-      localStorage.removeItem('student_token');
-      localStorage.removeItem('student_name');
-
-      // Determine if we need to go up a directory to reach index.html
-      const isPagesDir = window.location.pathname.includes('/pages/');
-      window.location.href = isPagesDir ? '../index.html' : 'index.html';
-    });
-  });
 })();
+
+/* Global logout function */
+window.handleLogout = async function(e) {
+  if (e) e.preventDefault();
+
+  const token = localStorage.getItem('student_token');
+  if (token) {
+    try {
+      await fetch('https://api.eightyeightevents.me/api/v1/student/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }
+
+  localStorage.removeItem('student_token');
+  localStorage.removeItem('student_name');
+
+  // Explicitly go to root
+  window.location.href = '/';
+};
