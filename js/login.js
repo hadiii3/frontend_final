@@ -11,7 +11,9 @@ function togglePwd() {
   }
 }
 
-function handleLogin(e) {
+const BASE_URL = 'https://api.eightyeightevents.me/api/v1';
+
+async function handleLogin(e) {
   e.preventDefault();
   const btn = document.getElementById('login-btn');
   const errEl = document.getElementById('login-error');
@@ -22,15 +24,36 @@ function handleLogin(e) {
   btn.textContent = 'Signing in…';
   btn.disabled = true;
 
-  setTimeout(() => {
-    /* Demo: any non-empty ID (at least 5 chars) succeeds */
-    if (studentId.length >= 5 && pwd) {
+  try {
+    const response = await fetch(`${BASE_URL}/student/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        student_id: studentId,
+        password: pwd,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      localStorage.setItem('student_token', data.data.token);
+      localStorage.setItem('student_name', data.data.student.full_name);
       window.location.href = 'dashboard.html';
     } else {
-      errEl.textContent = 'Please enter a valid student ID and password.';
+      errEl.textContent = data.message || 'Invalid student ID or password.';
       errEl.style.display = 'flex';
       btn.textContent = 'Sign In to Portal';
       btn.disabled = false;
     }
-  }, 900);
+  } catch (error) {
+    console.error('Login error:', error);
+    errEl.textContent = 'An error occurred during login. Please try again.';
+    errEl.style.display = 'flex';
+    btn.textContent = 'Sign In to Portal';
+    btn.disabled = false;
+  }
 }

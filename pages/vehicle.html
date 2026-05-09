@@ -78,9 +78,9 @@
         <a href="help.html">Help</a>
       </nav>
       <div class="nav-student-info">
-        <div class="nav-student-avatar">HA</div>
-        <span class="nav-student-name">Hadi Abdelaziz</span>
-        <a href="../index.html" class="btn btn-ghost" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
+        <div class="nav-student-avatar"></div>
+        <span class="nav-student-name"></span>
+        <a href="#" class="btn btn-ghost logout-btn" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
       </div>
       <button class="nav-mobile-toggle" aria-label="Toggle menu" id="mobile-menu-btn">
         <span></span><span></span><span></span>
@@ -91,7 +91,7 @@
       <a href="chatbot.html">AI Assistant</a>
       <a href="vehicle.html">Vehicle</a>
       <a href="help.html">Help</a>
-      <a href="../index.html">Sign Out</a>
+      <a href="#" class="logout-btn">Sign Out</a>
     </div>
   </header>
 
@@ -111,33 +111,11 @@
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6);">
 
         <!-- Active Registration Card -->
-        <div class="section-card">
-          <div class="section-card-header">
-            <div class="section-card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>
-              Active Vehicle Access
-            </div>
-            <span class="badge badge-green">Approved Permit</span>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:var(--space-4); margin-bottom:var(--space-5);">
-            <div class="veh-detail-row">
-              <span class="veh-detail-label">License Plate</span>
-              <span class="veh-detail-value" style="font-family:monospace;letter-spacing:1px;font-size:1.0625rem;color:var(--col-primary);font-weight:700;">XYZ 8992</span>
-            </div>
-            <div class="veh-detail-row">
-              <span class="veh-detail-label">Make &amp; Model</span>
-              <span class="veh-detail-value">Toyota Corolla</span>
-            </div>
-            <div class="veh-detail-row">
-              <span class="veh-detail-label">Color</span>
-              <span class="veh-detail-value">Silver</span>
-            </div>
-          </div>
+        <div class="section-card" id="active-vehicle-card" style="display:none;">
         </div>
 
         <!-- Request Vehicle Access Form -->
-        <div class="section-card">
+        <div class="section-card" id="request-vehicle-card" style="display:none;">
           <div class="section-card-header">
             <div class="section-card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
