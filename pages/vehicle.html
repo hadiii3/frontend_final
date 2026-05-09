@@ -108,10 +108,24 @@
       </div>
 
       <!-- Content grid -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6);">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start;">
 
-        <!-- Active Registration Card -->
-        <div class="section-card" id="active-vehicle-card" style="display:none;">
+        <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <!-- Active Registration Card -->
+          <div class="section-card" id="active-vehicle-card" style="display:none;">
+          </div>
+
+          <!-- History Section -->
+          <div class="section-card" id="vehicle-history-card" style="display:none;">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Request History
+              </div>
+            </div>
+            <div id="vehicle-history-list" style="display: flex; flex-direction: column; gap: var(--space-4);">
+            </div>
+          </div>
         </div>
 
         <!-- Request Vehicle Access Form -->

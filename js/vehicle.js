@@ -72,7 +72,7 @@ async function loadVehicleState() {
             </div>
             <div class="veh-detail-row">
               <span class="veh-detail-label">Submitted On</span>
-              <span class="veh-detail-value">${result.data.submitted_at}</span>
+              <span class="veh-detail-value">${result.data.submitted_at || ''}</span>
             </div>
           </div>
         `;
@@ -128,8 +128,64 @@ async function loadVehicleState() {
         `;
     }
 
+    // Fetch and display history
+    loadVehicleHistory(token);
+
   } catch (error) {
     console.error('Error fetching vehicle state:', error);
+  }
+}
+
+async function loadVehicleHistory(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/student/vehicle-requests/history`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    const historyCard = document.getElementById('vehicle-history-card');
+    const historyList = document.getElementById('vehicle-history-list');
+
+    if (result.success && result.data && result.data.length > 0) {
+      historyCard.style.display = 'block';
+      historyList.innerHTML = '';
+
+      result.data.forEach(item => {
+        let badgeHtml = '';
+        if (item.status === 'approved') {
+          badgeHtml = '<span class="badge badge-green">Approved</span>';
+        } else if (item.status === 'pending') {
+          badgeHtml = '<span class="badge" style="background:#fef08a; color:#854d0e;">Pending</span>';
+        } else if (item.status === 'rejected') {
+          badgeHtml = '<span class="badge" style="background:#fee2e2; color:#991b1b;">Rejected</span>';
+        }
+
+        const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString() : '';
+
+        const itemHtml = `
+          <div style="border: 1px solid var(--col-outline); border-radius: var(--radius-md); padding: var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+              <span style="font-weight: 600; font-family: monospace;">${item.plate_number}</span>
+              ${badgeHtml}
+            </div>
+            <div style="font-size: .8125rem; color: var(--col-on-muted); display: flex; justify-content: space-between;">
+              <span>${item.vehicle_type} ${item.vehicle_model}</span>
+              <span>${dateStr}</span>
+            </div>
+            ${item.status === 'rejected' && item.rejection_reason ? `<div style="margin-top: var(--space-2); font-size: .8125rem; color: #991b1b;">Reason: ${item.rejection_reason}</div>` : ''}
+          </div>
+        `;
+        historyList.innerHTML += itemHtml;
+      });
+    } else {
+      historyCard.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error fetching vehicle history:', error);
   }
 }
 
