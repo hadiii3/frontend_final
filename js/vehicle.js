@@ -1,5 +1,3 @@
-const BASE_URL = 'https://api.eightyeightevents.me/api/v1';
-
 async function loadVehicleState() {
   const token = localStorage.getItem('student_token');
   if (!token) {
@@ -7,19 +5,8 @@ async function loadVehicleState() {
     return;
   }
 
-  // Set top-nav details
-  const studentName = localStorage.getItem('student_name') || '';
-  const firstName = studentName.split(' ')[0];
-  const avatarInitials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-
-  const identityNameEls = document.querySelectorAll('.nav-student-name');
-  identityNameEls.forEach(el => el.textContent = studentName);
-
-  const avatarEls = document.querySelectorAll('.nav-student-avatar');
-  avatarEls.forEach(el => el.textContent = avatarInitials);
-
   try {
-    const response = await fetch(`${BASE_URL}/student/vehicle`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -72,7 +59,7 @@ async function loadVehicleState() {
             </div>
             <div class="veh-detail-row">
               <span class="veh-detail-label">Submitted On</span>
-              <span class="veh-detail-value">${result.data.submitted_at}</span>
+              <span class="veh-detail-value">${result.data.submitted_at || ''}</span>
             </div>
           </div>
         `;
@@ -128,8 +115,66 @@ async function loadVehicleState() {
         `;
     }
 
+    // Fetch and display history
+    loadVehicleHistory(token);
+
   } catch (error) {
     console.error('Error fetching vehicle state:', error);
+  }
+}
+
+async function loadVehicleHistory(token) {
+  try {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle-requests/history`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    const historyCard = document.getElementById('vehicle-history-card');
+    const historyList = document.getElementById('vehicle-history-list');
+
+    if (result.data) {
+      historyCard.style.display = 'block';
+      historyList.innerHTML = '';
+
+      if (result.data.length === 0) {
+        historyList.innerHTML = '<p style="font-size: .875rem; color: var(--col-on-muted); text-align: center; padding: var(--space-4) 0;">No vehicle requests found.</p>';
+      } else {
+        result.data.forEach(item => {
+          let badgeHtml = '';
+          if (item.status === 'approved') {
+            badgeHtml = '<span class="badge badge-green">Approved</span>';
+          } else if (item.status === 'pending') {
+            badgeHtml = '<span class="badge" style="background:#fef08a; color:#854d0e;">Pending</span>';
+          } else if (item.status === 'rejected') {
+            badgeHtml = '<span class="badge" style="background:#fee2e2; color:#991b1b;">Rejected</span>';
+          }
+
+          const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString() : '';
+
+          const itemHtml = `
+            <div style="border: 1px solid var(--col-outline); border-radius: var(--radius-md); padding: var(--space-3);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+                <span style="font-weight: 600; font-family: monospace;">${item.plate_number}</span>
+                ${badgeHtml}
+              </div>
+              <div style="font-size: .8125rem; color: var(--col-on-muted); display: flex; justify-content: space-between;">
+                <span>${item.vehicle_type} ${item.vehicle_model}</span>
+                <span>${dateStr}</span>
+              </div>
+              ${item.status === 'rejected' && item.rejection_reason ? `<div style="margin-top: var(--space-2); font-size: .8125rem; color: #991b1b;">Reason: ${item.rejection_reason}</div>` : ''}
+            </div>
+          `;
+          historyList.innerHTML += itemHtml;
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching vehicle history:', error);
   }
 }
 
@@ -168,7 +213,7 @@ async function submitVehicle(e) {
   const plate = document.getElementById('plate').value;
 
   try {
-    const response = await fetch(`${BASE_URL}/student/vehicle-requests`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle-requests`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

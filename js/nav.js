@@ -17,33 +17,42 @@
     }
   });
 
-  /* Logout functionality */
-  const logoutBtns = document.querySelectorAll('.logout-btn');
-  logoutBtns.forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
+  /* Hydrate Top Nav Student Info */
+  const studentName = localStorage.getItem('student_name');
+  if (studentName) {
+    const avatarInitials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-      const token = localStorage.getItem('student_token');
-      if (token) {
-        try {
-          await fetch('https://api.eightyeightevents.me/api/v1/student/logout', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json',
-            },
-          });
-        } catch (error) {
-          console.error('Logout error:', error);
-        }
-      }
+    const identityNameEls = document.querySelectorAll('.nav-student-name');
+    identityNameEls.forEach(el => el.textContent = studentName);
 
-      localStorage.removeItem('student_token');
-      localStorage.removeItem('student_name');
+    const avatarEls = document.querySelectorAll('.nav-student-avatar');
+    avatarEls.forEach(el => el.textContent = avatarInitials);
+  }
 
-      // Determine if we need to go up a directory to reach index.html
-      const isPagesDir = window.location.pathname.includes('/pages/');
-      window.location.href = isPagesDir ? '../index.html' : 'index.html';
-    });
-  });
 })();
+
+/* Global logout function */
+window.handleLogout = async function(e) {
+  if (e) e.preventDefault();
+
+  const token = localStorage.getItem('student_token');
+  if (token) {
+    try {
+      await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }
+
+  localStorage.removeItem('student_token');
+  localStorage.removeItem('student_name');
+
+  // Explicitly go to root
+  window.location.href = '/';
+};

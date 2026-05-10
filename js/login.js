@@ -11,8 +11,6 @@ function togglePwd() {
   }
 }
 
-const BASE_URL = 'https://api.eightyeightevents.me/api/v1';
-
 async function handleLogin(e) {
   e.preventDefault();
   const btn = document.getElementById('login-btn');
@@ -25,7 +23,7 @@ async function handleLogin(e) {
   btn.disabled = true;
 
   try {
-    const response = await fetch(`${BASE_URL}/student/login`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

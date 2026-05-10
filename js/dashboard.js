@@ -1,5 +1,3 @@
-const BASE_URL = 'https://api.eightyeightevents.me/api/v1';
-
 async function loadDashboard() {
   const token = localStorage.getItem('student_token');
 
@@ -9,7 +7,7 @@ async function loadDashboard() {
   }
 
   try {
-    const response = await fetch(`${BASE_URL}/student/profile`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/profile`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -33,10 +31,10 @@ async function loadDashboard() {
       const welcomeNameEls = document.querySelectorAll('.dash-welcome strong');
       welcomeNameEls.forEach(el => el.textContent = firstName);
 
-      const identityNameEls = document.querySelectorAll('.identity-name, .nav-student-name, .info-value.full-name');
+      const identityNameEls = document.querySelectorAll('.identity-name, .info-value.full-name');
       identityNameEls.forEach(el => el.textContent = data.full_name);
 
-      const avatarEls = document.querySelectorAll('.nav-student-avatar, .identity-avatar');
+      const avatarEls = document.querySelectorAll('.identity-avatar');
       avatarEls.forEach(el => el.textContent = avatarInitials);
 
       // Update Identity Meta
