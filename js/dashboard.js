@@ -7,7 +7,7 @@ async function loadDashboard() {
   }
 
   try {
-    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/profile`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_PROFILE}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
