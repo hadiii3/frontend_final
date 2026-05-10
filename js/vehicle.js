@@ -6,7 +6,7 @@ async function loadVehicleState() {
   }
 
   try {
-    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -125,7 +125,7 @@ async function loadVehicleState() {
 
 async function loadVehicleHistory(token) {
   try {
-    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle-requests/history`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_HISTORY}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -213,7 +213,7 @@ async function submitVehicle(e) {
   const plate = document.getElementById('plate').value;
 
   try {
-    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle-requests`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_REQUESTS}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

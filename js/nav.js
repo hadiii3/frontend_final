@@ -38,7 +38,7 @@ window.handleLogout = async function(e) {
   const token = localStorage.getItem('student_token');
   if (token) {
     try {
-      await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/logout`, {
+      await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_LOGOUT}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

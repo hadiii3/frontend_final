@@ -23,7 +23,7 @@ async function handleLogin(e) {
   btn.disabled = true;
 
   try {
-    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/login`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_LOGIN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
