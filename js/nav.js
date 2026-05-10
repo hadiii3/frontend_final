@@ -17,6 +17,18 @@
     }
   });
 
+  /* Hydrate Top Nav Student Info */
+  const studentName = localStorage.getItem('student_name');
+  if (studentName) {
+    const avatarInitials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+    const identityNameEls = document.querySelectorAll('.nav-student-name');
+    identityNameEls.forEach(el => el.textContent = studentName);
+
+    const avatarEls = document.querySelectorAll('.nav-student-avatar');
+    avatarEls.forEach(el => el.textContent = avatarInitials);
+  }
+
 })();
 
 /* Global logout function */
@@ -26,7 +38,7 @@ window.handleLogout = async function(e) {
   const token = localStorage.getItem('student_token');
   if (token) {
     try {
-      await fetch('https://api.eightyeightevents.me/api/v1/student/logout', {
+      await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

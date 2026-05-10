@@ -1,5 +1,3 @@
-const BASE_URL = 'https://api.eightyeightevents.me/api/v1';
-
 async function loadVehicleState() {
   const token = localStorage.getItem('student_token');
   if (!token) {
@@ -7,19 +5,8 @@ async function loadVehicleState() {
     return;
   }
 
-  // Set top-nav details
-  const studentName = localStorage.getItem('student_name') || '';
-  const firstName = studentName.split(' ')[0];
-  const avatarInitials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-
-  const identityNameEls = document.querySelectorAll('.nav-student-name');
-  identityNameEls.forEach(el => el.textContent = studentName);
-
-  const avatarEls = document.querySelectorAll('.nav-student-avatar');
-  avatarEls.forEach(el => el.textContent = avatarInitials);
-
   try {
-    const response = await fetch(`${BASE_URL}/student/vehicle`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -138,7 +125,7 @@ async function loadVehicleState() {
 
 async function loadVehicleHistory(token) {
   try {
-    const response = await fetch(`${BASE_URL}/student/vehicle-requests/history`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle-requests/history`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -226,7 +213,7 @@ async function submitVehicle(e) {
   const plate = document.getElementById('plate').value;
 
   try {
-    const response = await fetch(`${BASE_URL}/student/vehicle-requests`, {
+    const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/student/vehicle-requests`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
