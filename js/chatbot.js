@@ -16,6 +16,16 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+/* ── RT-09: Sanitize user input before any AI API call ───────────── */
+function sanitizeInput(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/\0/g, '')           // strip null bytes
+    .replace(/[<>]/g, '')         // strip angle brackets (prompt injection / HTML)
+    .substring(0, 500)            // hard length cap
+    .trim();
+}
+
 /* ── DOM refs (set after DOMContentLoaded) ───────────────────────── */
 let chatBody, chatInput, sendBtn;
 
@@ -63,7 +73,11 @@ function sendQuick(el) {
 
 /* ── Core send ───────────────────────────────────────────────────── */
 function send() {
-  const text = chatInput.value.trim();
+  const raw  = chatInput.value.trim();
+  if (!raw) return;
+
+  /* RT-09: sanitize before display AND before any future AI API call */
+  const text = sanitizeInput(raw);
   if (!text) return;
 
   appendMsg('user', text);

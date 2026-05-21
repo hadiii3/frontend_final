@@ -19,7 +19,14 @@
   });
 
   /* ── Hydrate student name + avatar from localStorage ─────── */
-  const studentName = localStorage.getItem('student_name');
+  const rawName = localStorage.getItem('student_name');
+  /* RT-17: validate student_name — must be a plain string, max 100 chars,
+     letters/spaces only. Prevents a tampered localStorage value from being
+     used (though textContent already prevents XSS, this adds defence-in-depth) */
+  const studentName = (typeof rawName === 'string' && /^[\p{L}\s\-'.]{1,100}$/u.test(rawName.trim()))
+    ? rawName.trim()
+    : null;
+
   if (studentName) {
     const initials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     document.querySelectorAll('.nav-student-name').forEach(el => el.textContent = studentName);

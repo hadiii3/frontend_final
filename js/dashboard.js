@@ -68,6 +68,10 @@ async function loadDashboard() {
       const emailEl = document.querySelector('.info-value.email');
       if (emailEl) emailEl.textContent = data.email;
 
+      /* RT-19: Populate DOB from API — no longer hardcoded in HTML */
+      const dobEl = document.querySelector('.info-value.dob');
+      if (dobEl) dobEl.textContent = data.date_of_birth || '—';
+
       const gpaValue = document.querySelector('.gpa-value');
       if (gpaValue) gpaValue.textContent = data.gpa.toFixed(2);
 

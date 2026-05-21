@@ -7,6 +7,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://api.eightyeightevents.me https://ai.eightyeightevents.me; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
   <!-- RT-12: Clickjacking protection -->
   <meta http-equiv="X-Frame-Options" content="DENY">
+  <!-- RT-16: Referrer policy -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>AI Assistant | Galala Uni</title>
   <meta name="description" content="Galala Uni AI Academic Assistant — ask about courses, deadlines, campus policy, and more." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -120,7 +122,7 @@
   </div>
 
   <script src="../js/config.js"></script>
-  <script src="../js/nav.js?v=2"></script>
-  <script src="../js/chatbot.js?v=2"></script>
+  <script src="../js/nav.js"></script>
+  <script src="../js/chatbot.js"></script>
 </body>
 </html>
