@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- RT-05: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://api.eightyeightevents.me https://ai.eightyeightevents.me; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+  <!-- RT-12: Clickjacking protection -->
+  <meta http-equiv="X-Frame-Options" content="DENY">
   <title>Student Login | Galala Uni</title>
   <meta name="description" content="Sign in to your Galala Uni student portal to access your dashboard, academic records, and campus tools." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,7 +37,7 @@
       <h1 class="login-form-title" style="text-align:center;">Welcome back.</h1>
       <p class="login-form-subtitle" style="text-align:center;">Sign in with your university ID and password.</p>
 
-      <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+      <form class="login-form" id="login-form">
         <div class="form-group">
           <label class="form-label" for="student-id">University ID</label>
           <input
@@ -62,7 +66,6 @@
             />
             <button
               type="button"
-              onclick="togglePwd()"
               style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--col-on-muted);"
               aria-label="Toggle password visibility"
               id="pwd-toggle"

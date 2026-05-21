@@ -1,58 +1,59 @@
-/* nav.js — Mobile menu toggle + scroll-aware nav */
-(function () {
-  const btn = document.getElementById('mobile-menu-btn');
-  const menu = document.getElementById('mobile-menu');
+/* nav.js
+ * Fixes applied:
+ *   RT-10 : inline onclick="handleLogout" removed from HTML; listener attached here
+ *   RT-14 : logout uses keepalive:true + window.location.replace (no Back button)
+ *   RT-04 : removed window.handleLogout global exposure
+ */
 
+(function () {
+  /* ── Mobile menu toggle ───────────────────────────────────── */
+  const btn  = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
   if (btn && menu) {
-    btn.addEventListener('click', () => {
-      menu.classList.toggle('open');
-    });
+    btn.addEventListener('click', () => menu.classList.toggle('open'));
   }
 
-  /* Highlight active nav link */
-  const links = document.querySelectorAll('.nav-links a, .nav-mobile a');
-  links.forEach(link => {
-    if (link.href === window.location.href) {
-      link.classList.add('active');
-    }
+  /* ── Highlight active nav link ────────────────────────────── */
+  document.querySelectorAll('.nav-links a, .nav-mobile a').forEach(link => {
+    if (link.href === window.location.href) link.classList.add('active');
   });
 
-  /* Hydrate Top Nav Student Info */
+  /* ── Hydrate student name + avatar from localStorage ─────── */
   const studentName = localStorage.getItem('student_name');
   if (studentName) {
-    const avatarInitials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-
-    const identityNameEls = document.querySelectorAll('.nav-student-name');
-    identityNameEls.forEach(el => el.textContent = studentName);
-
-    const avatarEls = document.querySelectorAll('.nav-student-avatar');
-    avatarEls.forEach(el => el.textContent = avatarInitials);
+    const initials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    document.querySelectorAll('.nav-student-name').forEach(el => el.textContent = studentName);
+    document.querySelectorAll('.nav-student-avatar').forEach(el => el.textContent = initials);
   }
 
+  /* ── RT-10: Attach logout listeners (replaces inline onclick) ── */
+  document.querySelectorAll('.logout-btn').forEach(el => {
+    el.addEventListener('click', handleLogout);
+  });
 })();
 
-/* Global logout function */
-window.handleLogout = async function(e) {
+/* ── RT-14: Secure logout ────────────────────────────────────────── */
+async function handleLogout(e) {
   if (e) e.preventDefault();
 
   const token = localStorage.getItem('student_token');
-  if (token) {
-    try {
-      await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_LOGOUT}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  }
 
+  /* Clear local state FIRST regardless of API result */
   localStorage.removeItem('student_token');
   localStorage.removeItem('student_name');
 
-  // Explicitly go to root
-  window.location.href = '/';
-};
+  /* Best-effort server-side invalidation using keepalive so the
+     request completes even after navigation begins */
+  if (token) {
+    try {
+      fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_LOGOUT}`, {
+        method:    'POST',
+        keepalive: true,
+        headers:   { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      });
+    } catch { /* fire-and-forget — local state already cleared */ }
+  }
+
+  /* replace() prevents Back button from returning to authenticated page */
+  window.location.replace('/');
+}
