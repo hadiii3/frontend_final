@@ -1,3 +1,4 @@
+import APP_CONFIG from "./config.js";
 /* vehicle.js
  * Fixes applied:
  *   RT-02 : ALL API data escaped with escapeHtml() before innerHTML injection
@@ -23,19 +24,19 @@ function escapeHtml(str) {
 const VEH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>`;
 
 async function loadVehicleState() {
-  const token = localStorage.getItem('student_token');
+  const token = sessionStorage.getItem('student_token');
   if (!token) { window.location.replace('login.html'); return; }
 
   try {
     const response = await fetch(
-      `${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE}`,
+      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE}`,
       { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
 
     /* RT-07 FIX */
     if (!response.ok) {
-      localStorage.removeItem('student_token');
-      localStorage.removeItem('student_name');
+      sessionStorage.removeItem('student_token');
+      sessionStorage.removeItem('student_name');
       window.location.replace('login.html');
       return;
     }
@@ -131,7 +132,7 @@ async function loadVehicleState() {
 async function loadVehicleHistory(token) {
   try {
     const response = await fetch(
-      `${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_HISTORY}`,
+      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_HISTORY}`,
       { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
 
@@ -213,7 +214,7 @@ function updatePlate(val) {
 /* ── Form submit ─────────────────────────────────────────────────── */
 async function submitVehicle(e) {
   e.preventDefault();
-  const token = localStorage.getItem('student_token');
+  const token = sessionStorage.getItem('student_token');
   if (!token) return;
 
   const btn     = document.getElementById('submit-btn');
@@ -239,7 +240,7 @@ async function submitVehicle(e) {
 
   try {
     const response = await fetch(
-      `${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_REQUESTS}`,
+      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_REQUESTS}`,
       {
         method:  'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },

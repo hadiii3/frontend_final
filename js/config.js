@@ -1,5 +1,5 @@
-/* config.js — RT-04 FIX: Object.freeze prevents runtime mutation of API config */
-window.APP_CONFIG = Object.freeze({
+/* config.js — RT-04 FIX: Export as ES Module to prevent global mutation */
+const APP_CONFIG = Object.freeze({
     API_BASE_URL: "https://api.eightyeightevents.me/api/v1",
     AI_BASE_URL:  "https://ai.eightyeightevents.me",
     ENDPOINTS: Object.freeze({
@@ -11,3 +11,5 @@ window.APP_CONFIG = Object.freeze({
         STUDENT_VEHICLE_HISTORY:  "/student/vehicle-requests/history",
     })
 });
+
+export default APP_CONFIG;

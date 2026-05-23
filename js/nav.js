@@ -1,3 +1,4 @@
+import APP_CONFIG from "./config.js";
 /* nav.js
  * Fixes applied:
  *   RT-10 : inline onclick="handleLogout" removed from HTML; listener attached here
@@ -18,10 +19,10 @@
     if (link.href === window.location.href) link.classList.add('active');
   });
 
-  /* ── Hydrate student name + avatar from localStorage ─────── */
-  const rawName = localStorage.getItem('student_name');
+  /* ── Hydrate student name + avatar from sessionStorage ─────── */
+  const rawName = sessionStorage.getItem('student_name');
   /* RT-17: validate student_name — must be a plain string, max 100 chars,
-     letters/spaces only. Prevents a tampered localStorage value from being
+     letters/spaces only. Prevents a tampered sessionStorage value from being
      used (though textContent already prevents XSS, this adds defence-in-depth) */
   const studentName = (typeof rawName === 'string' && /^[\p{L}\s\-'.]{1,100}$/u.test(rawName.trim()))
     ? rawName.trim()
@@ -43,17 +44,17 @@
 async function handleLogout(e) {
   if (e) e.preventDefault();
 
-  const token = localStorage.getItem('student_token');
+  const token = sessionStorage.getItem('student_token');
 
   /* Clear local state FIRST regardless of API result */
-  localStorage.removeItem('student_token');
-  localStorage.removeItem('student_name');
+  sessionStorage.removeItem('student_token');
+  sessionStorage.removeItem('student_name');
 
   /* Best-effort server-side invalidation using keepalive so the
      request completes even after navigation begins */
   if (token) {
     try {
-      fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_LOGOUT}`, {
+      fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_LOGOUT}`, {
         method:    'POST',
         keepalive: true,
         headers:   { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },

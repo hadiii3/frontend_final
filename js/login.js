@@ -1,3 +1,4 @@
+import APP_CONFIG from "./config.js";
 /* login.js — RT-08: brute-force lockout | RT-10: no inline handlers */
 
 let _failCount = 0;
@@ -30,7 +31,7 @@ async function handleLogin(e) {
   btn.disabled = true;
 
   try {
-    const res  = await fetch(`${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_LOGIN}`, {
+    const res  = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_LOGIN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ student_id: sid, password: pwd }),
@@ -39,8 +40,8 @@ async function handleLogin(e) {
 
     if (data.success) {
       _failCount = 0;
-      localStorage.setItem('student_token', data.data.token);
-      localStorage.setItem('student_name',  data.data.student.full_name);
+      sessionStorage.setItem('student_token', data.data.token);
+      sessionStorage.setItem('student_name',  data.data.student.full_name);
       window.location.href = 'dashboard.html';
     } else {
       _failCount++;

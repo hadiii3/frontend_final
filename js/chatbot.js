@@ -1,3 +1,4 @@
+import APP_CONFIG from "./config.js";
 /* chatbot.js
  * Fixes applied:
  *   RT-01 : user input no longer reaches innerHTML — textContent used for user bubbles

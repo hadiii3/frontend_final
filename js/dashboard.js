@@ -1,3 +1,4 @@
+import APP_CONFIG from "./config.js";
 /* dashboard.js
  * Fixes applied:
  *   RT-02 : faculty.name and student_id now escaped before innerHTML injection
@@ -17,7 +18,7 @@ function escapeHtml(str) {
 }
 
 async function loadDashboard() {
-  const token = localStorage.getItem('student_token');
+  const token = sessionStorage.getItem('student_token');
 
   if (!token) {
     window.location.replace('login.html');
@@ -26,14 +27,14 @@ async function loadDashboard() {
 
   try {
     const response = await fetch(
-      `${window.APP_CONFIG.API_BASE_URL}${window.APP_CONFIG.ENDPOINTS.STUDENT_PROFILE}`,
+      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_PROFILE}`,
       { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
 
     /* RT-07 FIX: catch any non-OK response, not just 401 */
     if (!response.ok) {
-      localStorage.removeItem('student_token');
-      localStorage.removeItem('student_name');
+      sessionStorage.removeItem('student_token');
+      sessionStorage.removeItem('student_name');
       window.location.replace('login.html');
       return;
     }
