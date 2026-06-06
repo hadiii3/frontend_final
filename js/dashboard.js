@@ -32,11 +32,20 @@ async function loadDashboard() {
       { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
 
-    /* RT-07 FIX: catch any non-OK response, not just 401 */
-    if (!response.ok) {
+    /* Only redirect to login on actual auth failures (401 / 403).
+       For other errors (network down, 500, etc.) stay on the page
+       to avoid an infinite login ↔ dashboard loop. */
+    if (response.status === 401 || response.status === 403) {
       sessionStorage.removeItem('student_token');
       sessionStorage.removeItem('student_name');
       window.location.replace('login.html');
+      return;
+    }
+
+    if (!response.ok) {
+      /* Server error — show a visible message, don't redirect */
+      const errBanner = document.getElementById('dash-error-banner');
+      if (errBanner) errBanner.style.display = 'flex';
       return;
     }
 
