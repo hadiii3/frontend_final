@@ -9,7 +9,7 @@
 
 import APP_CONFIG from './config.js';
 
-const AI_CHAT_URL = `${APP_CONFIG.AI_BASE_URL}/chat`;
+const AI_CHAT_URL = `${APP_CONFIG.AI_BASE_URL}${APP_CONFIG.AI_ENDPOINTS.CHAT}`;
 
 /* ── HTML escape helper (RT-01) ──────────────────────────────────── */
 function escapeHtml(str) {

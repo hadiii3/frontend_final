@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- RT-05: Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src https://api.eightyeightevents.me https://ai.eightyeightevents.me; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
   <!-- RT-12: Clickjacking protection -->
   <meta http-equiv="X-Frame-Options" content="DENY">
   <!-- RT-16: Referrer policy -->
@@ -185,6 +183,6 @@
 
   <!-- RT-11 FIX: config.js loaded FIRST -->
   <script type="module" src="../js/nav.js"></script>
-  <script src="../js/chatbot.js"></script>
+  <script type="module" src="../js/chatbot.js"></script>
 </body>
 </html>

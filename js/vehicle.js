@@ -7,6 +7,12 @@ import APP_CONFIG from "./config.js";
  *   RT-10 : inline onsubmit/oninput removed from HTML; listeners attached here
  *   RT-13 : client-side input validation added before form submit
  *   RT-15 : console.error removed
+ *
+ * Visibility rules for request-vehicle-card (submission form):
+ *   none     → show form (no existing request)
+ *   pending  → HIDE form (cannot submit while under review)
+ *   approved → show form (student can register an additional/replacement plate)
+ *   rejected → show form (student can resubmit)
  */
 
 /* ── HTML escape helper (RT-02) ──────────────────────────────────── */
@@ -48,41 +54,25 @@ async function loadVehicleState() {
     activeCard.innerHTML = '';
 
     if (result.status === 'none') {
+      /* No request yet — only show the form */
       activeCard.style.display = 'none';
       formCard.style.display   = 'block';
 
     } else if (result.status === 'pending') {
+      /* Under review — show status card, HIDE form */
       activeCard.style.display = 'block';
       formCard.style.display   = 'none';
-      /* RT-02 FIX: all result.data.* values passed through escapeHtml() */
       activeCard.innerHTML = `
         <div class="section-card-header">
           <div class="section-card-title">${VEH_SVG} Vehicle Request</div>
           <span class="badge" style="background:#fef08a;color:#854d0e;">Pending</span>
         </div>
-        <p style="font-size:.875rem;color:var(--col-on-muted);margin-bottom:var(--space-5);">Your request is being reviewed.</p>
-        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-bottom:var(--space-5);">
-          <div class="veh-detail-row">
-            <span class="veh-detail-label">License Plate</span>
-            <span class="veh-detail-value" style="font-family:monospace;letter-spacing:1px;font-size:1.0625rem;color:var(--col-primary);font-weight:700;">${escapeHtml(result.data.plate_number)}</span>
-          </div>
-          <div class="veh-detail-row">
-            <span class="veh-detail-label">Make &amp; Model</span>
-            <span class="veh-detail-value">${escapeHtml(result.data.vehicle_type)} ${escapeHtml(result.data.vehicle_model)}</span>
-          </div>
-          <div class="veh-detail-row">
-            <span class="veh-detail-label">Color</span>
-            <span class="veh-detail-value">${escapeHtml(result.data.vehicle_color)}</span>
-          </div>
-          <div class="veh-detail-row">
-            <span class="veh-detail-label">Submitted On</span>
-            <span class="veh-detail-value">${escapeHtml(result.data.submitted_at || '')}</span>
-          </div>
-        </div>`;
+        <p style="font-size:.875rem;color:var(--col-on-muted);margin-bottom:var(--space-5);">Your request is under review by Campus Security. Vehicle details will be visible once a decision has been made.</p>`;
 
     } else if (result.status === 'approved') {
+      /* Approved — show permit details AND the form so they can add another plate */
       activeCard.style.display = 'block';
-      formCard.style.display   = 'none';
+      formCard.style.display   = 'block';
       activeCard.innerHTML = `
         <div class="section-card-header">
           <div class="section-card-title">${VEH_SVG} Active Vehicle Access</div>
@@ -112,6 +102,7 @@ async function loadVehicleState() {
         </div>`;
 
     } else if (result.status === 'rejected') {
+      /* Rejected — show rejected details AND the form so they can resubmit */
       activeCard.style.display = 'block';
       formCard.style.display   = 'block';
       activeCard.innerHTML = `
@@ -119,9 +110,25 @@ async function loadVehicleState() {
           <div class="section-card-title">${VEH_SVG} Vehicle Request</div>
           <span class="badge" style="background:#fee2e2;color:#991b1b;">Rejected</span>
         </div>
-        <p style="font-size:.875rem;color:var(--col-on-muted);margin-bottom:var(--space-5);">
-          Your previous request was rejected. Reason: ${escapeHtml(result.data.rejection_reason)}
-        </p>`;
+        <p style="font-size:.875rem;color:var(--col-on-muted);margin-bottom:var(--space-5);">Your previous request was rejected. You may submit a new request below.</p>
+        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-bottom:var(--space-5);">
+          <div class="veh-detail-row">
+            <span class="veh-detail-label">License Plate</span>
+            <span class="veh-detail-value" style="font-family:monospace;letter-spacing:1px;font-size:1.0625rem;color:#991b1b;font-weight:700;">${escapeHtml(result.data.plate_number)}</span>
+          </div>
+          <div class="veh-detail-row">
+            <span class="veh-detail-label">Make &amp; Model</span>
+            <span class="veh-detail-value">${escapeHtml(result.data.vehicle_type)} ${escapeHtml(result.data.vehicle_model)}</span>
+          </div>
+          <div class="veh-detail-row">
+            <span class="veh-detail-label">Color</span>
+            <span class="veh-detail-value">${escapeHtml(result.data.vehicle_color)}</span>
+          </div>
+          <div class="veh-detail-row">
+            <span class="veh-detail-label">Rejection Reason</span>
+            <span class="veh-detail-value" style="color:#991b1b;">${escapeHtml(result.data.rejection_reason || 'No reason provided')}</span>
+          </div>
+        </div>`;
     }
 
     loadVehicleHistory(token);
@@ -135,6 +142,9 @@ async function loadVehicleHistory(token) {
       `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_HISTORY}`,
       { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
+
+    /* RT-07: guard non-OK responses (e.g. expired token) */
+    if (!response.ok) return;
 
     const result      = await response.json();
     const historyCard = document.getElementById('vehicle-history-card');
