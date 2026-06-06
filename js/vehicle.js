@@ -279,6 +279,8 @@ async function submitVehicle(e) {
       btn.disabled    = false;
     }
   } catch {
+    const errEl = document.getElementById('vehicle-error');
+    if (errEl) { errEl.textContent = 'Network error — please check your connection and try again.'; errEl.style.display = 'block'; }
     btn.textContent = 'Submit Access Request';
     btn.disabled    = false;
   }
