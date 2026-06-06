@@ -1,10 +1,15 @@
-import APP_CONFIG from "./config.js";
 /* chatbot.js
  * Fixes applied:
  *   RT-01 : user input no longer reaches innerHTML — textContent used for user bubbles
  *           fallback AI response HTML-escapes the reflected text
+ *   RT-09 : sanitizeInput() strips null bytes / angle brackets / caps length
  *   RT-10 : inline onclick="sendQuick" replaced with addEventListener
+ * AI Integration: POST https://ai.galalabot.app/api/chat (no chat history)
  */
+
+import APP_CONFIG from './config.js';
+
+const AI_CHAT_URL = `${APP_CONFIG.AI_BASE_URL}/chat`;
 
 /* ── HTML escape helper (RT-01) ──────────────────────────────────── */
 function escapeHtml(str) {
@@ -67,17 +72,16 @@ function initChatInput() {
 
 /* ── sendQuick used by chatbot.html chip buttons ─────────────────── */
 function sendQuick(el) {
-  /* Use dataset if available, else textContent */
   chatInput.value = el.dataset.quick || el.textContent.trim();
   send();
 }
 
 /* ── Core send ───────────────────────────────────────────────────── */
-function send() {
-  const raw  = chatInput.value.trim();
+async function send() {
+  const raw = chatInput.value.trim();
   if (!raw) return;
 
-  /* RT-09: sanitize before display AND before any future AI API call */
+  /* RT-09: sanitize before display AND before API call */
   const text = sanitizeInput(raw);
   if (!text) return;
 
@@ -86,10 +90,68 @@ function send() {
   chatInput.style.height = 'auto';
 
   showTyping();
-  setTimeout(() => {
+
+  try {
+    const res = await fetch(AI_CHAT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, chat_history: [] })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
     removeTyping();
-    appendMsg('ai', getResponse(text));
-  }, 1200 + Math.random() * 600);
+    appendMsg('ai', formatAIResponse(data));
+  } catch (err) {
+    removeTyping();
+    appendMsg('ai', `<span style="color:var(--error,#f87171)">Sorry, I couldn't reach the AI right now. Please try again in a moment.</span>`);
+    console.error('[chatbot] AI API error:', err);
+  }
+}
+
+/* ── Format the structured AI response into HTML ─────────────────── */
+function formatAIResponse(data) {
+  let html = '';
+
+  if (data.your_case) {
+    html += `<p><strong>${escapeHtml(data.your_case)}</strong></p>`;
+  }
+
+  if (data.what_this_means) {
+    html += `<p>${escapeHtml(data.what_this_means)}</p>`;
+  }
+
+  if (Array.isArray(data.what_you_need) && data.what_you_need.length) {
+    html += `<p><strong>What you need:</strong></p><ul>`;
+    data.what_you_need.forEach(item => {
+      html += `<li>${escapeHtml(item)}</li>`;
+    });
+    html += `</ul>`;
+  }
+
+  if (Array.isArray(data.what_to_do_now) && data.what_to_do_now.length) {
+    html += `<p><strong>What to do now:</strong></p><ul>`;
+    data.what_to_do_now.forEach(step => {
+      html += `<li>${escapeHtml(step)}</li>`;
+    });
+    html += `</ul>`;
+  }
+
+  if (Array.isArray(data.when_to_contact_admission_office) && data.when_to_contact_admission_office.length) {
+    html += `<p><strong>Contact admissions if:</strong></p><ul>`;
+    data.when_to_contact_admission_office.forEach(cond => {
+      html += `<li>${escapeHtml(cond)}</li>`;
+    });
+    html += `</ul>`;
+  }
+
+  /* Fallback if response has no recognisable fields */
+  if (!html) {
+    html = `<p>I received a response but couldn't parse it. Please try rephrasing your question.</p>`;
+  }
+
+  return html;
 }
 
 /* ── RT-01 FIX: appendMsg — user messages use textContent, never innerHTML ── */
@@ -106,8 +168,7 @@ function appendMsg(role, htmlOrText) {
   timeEl.textContent = time;
 
   if (role === 'ai') {
-    /* AI responses are hardcoded trusted HTML — safe to use innerHTML.
-       The fallback path now HTML-escapes user text before returning it. */
+    /* AI responses are sanitized/escaped HTML — safe to use innerHTML */
     bubbleEl.innerHTML = htmlOrText;
 
     const avatar = document.createElement('div');
@@ -154,27 +215,6 @@ function showTyping() {
 function removeTyping() {
   const el = document.getElementById('typing-indicator');
   if (el) el.remove();
-}
-
-/* ── Response logic ──────────────────────────────────────────────── */
-const responses = {
-  deadline:   'Application deadlines vary by program. For <strong>Spring 2026</strong>, the Early Decision deadline is <strong>November 15th</strong>. The regular round closes <strong>January 15, 2026</strong>. International applicants should apply 2 weeks earlier.',
-  scholarship:'Galala Uni offers three scholarship tiers: <strong>Academic Excellence</strong> (GPA 3.8+), <strong>Merit Award</strong> (GPA 3.5–3.79), and <strong>Financial Aid Grants</strong> based on need.',
-  visa:       'For international students, Galala Uni provides a <strong>DS-2019 / I-20 form</strong> upon enrollment confirmation. You\'ll then apply for a J-1 or F-1 visa at your local US consulate.',
-  housing:    'On-campus housing is available for all enrolled students. We offer <strong>single rooms, shared apartments, and graduate suites</strong>. Applications open March 1st for the following academic year.',
-  tuition:    'Tuition for the 2025–2026 academic year is <strong>$18,500 per semester</strong> for domestic students and <strong>$22,000 per semester</strong> for international students.',
-};
-
-function getResponse(text) {
-  const lower = text.toLowerCase();
-  if (lower.includes('deadline') || lower.includes('when'))        return responses.deadline;
-  if (lower.includes('scholarship') || lower.includes('financial')) return responses.scholarship;
-  if (lower.includes('visa') || lower.includes('international'))    return responses.visa;
-  if (lower.includes('housing') || lower.includes('dorm'))          return responses.housing;
-  if (lower.includes('tuition') || lower.includes('fee'))           return responses.tuition;
-
-  /* RT-01 FIX: escapeHtml() prevents user text from being parsed as HTML */
-  return `Thank you for your question about &ldquo;<em>${escapeHtml(text)}</em>&rdquo;. For the most accurate information, contact the <strong>Galala Uni Admissions Office</strong> at <strong>admissions@gu.edu.eg</strong>.`;
 }
 
 /* ── Init ────────────────────────────────────────────────────────── */
