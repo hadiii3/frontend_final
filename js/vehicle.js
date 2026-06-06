@@ -39,13 +39,15 @@ async function loadVehicleState() {
       { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
 
-    /* RT-07 FIX */
-    if (!response.ok) {
+    /* Only redirect on real auth failures — not server errors */
+    if (response.status === 401 || response.status === 403) {
       sessionStorage.removeItem('student_token');
       sessionStorage.removeItem('student_name');
       window.location.replace('login.html');
       return;
     }
+
+    if (!response.ok) return; /* server error — stay on page */
 
     const result     = await response.json();
     const activeCard = document.getElementById('active-vehicle-card');
