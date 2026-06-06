@@ -38,9 +38,6 @@ async function handleLogin(e) {
     });
     const data = await res.json();
 
-    /* DEBUG — remove after confirming token path is correct */
-    console.log('[login] API response:', JSON.stringify(data));
-
     if (data.success) {
       _failCount = 0;
       sessionStorage.setItem('student_token', data.data.token);
