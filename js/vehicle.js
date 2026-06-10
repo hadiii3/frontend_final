@@ -199,14 +199,14 @@ async function loadVehicleHistory(token) {
 }
 
 /* ── RT-13: Input validation ─────────────────────────────────────── */
-const PLATE_RE = /^[A-Za-z0-9 \-]{2,15}$/;
-const ALPHA_RE = /^[A-Za-z\s]{1,50}$/;
+const PLATE_RE = /^[\p{L}\p{N} \-]{2,15}$/u;
+const ALPHA_RE = /^[\p{L}\p{N}\s\-]{1,50}$/u;
 
 function validateVehicle(type, model, color, plate) {
   if (!PLATE_RE.test(plate)) return 'Invalid plate number (2–15 alphanumeric characters only).';
-  if (!ALPHA_RE.test(type))  return 'Invalid vehicle make (letters only, max 50 chars).';
-  if (!ALPHA_RE.test(model)) return 'Invalid vehicle model (letters only, max 50 chars).';
-  if (!ALPHA_RE.test(color)) return 'Invalid vehicle color (letters only, max 50 chars).';
+  if (!ALPHA_RE.test(type))  return 'Invalid vehicle make (letters/numbers only, max 50 chars).';
+  if (!ALPHA_RE.test(model)) return 'Invalid vehicle model (letters/numbers only, max 50 chars).';
+  if (!ALPHA_RE.test(color)) return 'Invalid vehicle color (letters/numbers only, max 50 chars).';
   return null;
 }
 
