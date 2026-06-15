@@ -13,15 +13,6 @@
   <link rel="stylesheet" href="../css/globals.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
   <link rel="stylesheet" href="../css/chatbot.css" />
-  <style>
-    .chatbot-portal-layout {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: var(--space-6);
-      padding-top: calc(80px + var(--space-6));
-      min-height: 100vh;
-    }
-  </style>
 </head>
 <body style="background:var(--col-surface-low);">
 
@@ -55,28 +46,71 @@
     </div>
   </header>
 
-  <div class="chatbot-portal-layout">
+  <!-- MAIN LAYOUT: sidebar + chat -->
+  <div class="chatbot-app-layout" id="chatbot-app-layout">
+
+    <!-- CHAT HISTORY SIDEBAR (only rendered/shown for logged-in users via JS) -->
+    <aside class="chat-history-sidebar" id="chat-history-sidebar" aria-label="Chat history" hidden>
+      <div class="chs-header">
+        <div class="chs-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
+          </svg>
+          Chat History
+        </div>
+        <button class="chs-new-btn" id="new-chat-btn" title="Start new conversation" aria-label="New chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="chs-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chs-search-icon" aria-hidden="true">
+          <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+        </svg>
+        <input type="search" class="chs-search" id="chs-search" placeholder="Search conversations…" aria-label="Search chat history" />
+      </div>
+
+      <div class="chs-list" id="chs-list" role="list">
+        <!-- Populated by chatbot.js -->
+      </div>
+
+      <div class="chs-empty" id="chs-empty" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
+        </svg>
+        <p>No conversations yet.<br>Start chatting below!</p>
+      </div>
+    </aside>
 
     <!-- CHAT WINDOW -->
-    <div class="chat-window">
+    <div class="chat-window" id="chat-window">
       <!-- Header -->
-      <div class="chat-header" style="justify-content: center;">
-        <div class="chat-header-info" style="text-align: center;">
-          <div class="chat-header-name" style="font-size: 1.125rem;">Galala Uni Assistant</div>
+      <div class="chat-header">
+        <!-- Mobile: history toggle -->
+        <button class="chs-mobile-toggle" id="chs-mobile-toggle" aria-label="Toggle chat history" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+          </svg>
+        </button>
+        <div class="chat-header-info">
+          <div class="chat-header-name">Intelligent Admission Assistant</div>
+          <div class="chat-session-label" id="chat-session-label"></div>
         </div>
       </div>
 
       <!-- Chat Body -->
       <div class="chat-body" id="chat-body">
 
-        <!-- AI Greeting -->
-        <div class="msg msg-ai" data-time="Now">
+        <!-- AI Greeting (default; overwritten when loading a session) -->
+        <div class="msg msg-ai" data-time="Now" id="greeting-msg">
           <div class="msg-avatar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
           </div>
           <div>
-            <div class="msg-bubble">
-              Hello, Alexandria! I'm your Galala Uni Academic Concierge. I can help you with <strong>course registration</strong>, <strong>deadlines</strong>, <strong>campus policy</strong>, and any other academic questions. How can I assist you today?
+            <div class="msg-bubble" id="greeting-bubble">
+              Hello! 👋 I'm the <strong>Galala University Intelligent Admission Assistant</strong>. I can guide you through <strong>admission requirements</strong>, <strong>application procedures</strong>, <strong>required documents</strong>, <strong>deadlines</strong>, and any other admission-related questions. How can I help you today?
             </div>
             <div class="msg-time">Just now</div>
           </div>
@@ -86,11 +120,11 @@
 
       <!-- Quick reply chips -->
       <div class="chat-chips" id="chat-chips">
-        <button class="chip" data-quick="Course registration help">Course registration help</button>
-        <button class="chip" data-quick="Upcoming deadlines">Upcoming deadlines</button>
-        <button class="chip" data-quick="Grade dispute process">Grade dispute process</button>
-        <button class="chip" data-quick="Campus parking rules">Campus parking rules</button>
-        <button class="chip" data-quick="Financial aid status">Financial aid status</button>
+        <button class="chip" data-quick="What are the admission requirements?">Admission requirements</button>
+        <button class="chip" data-quick="What documents do I need to apply?">Required documents</button>
+        <button class="chip" data-quick="What are the application deadlines?">Application deadlines</button>
+        <button class="chip" data-quick="How do I check my application status?">Application status</button>
+        <button class="chip" data-quick="What are the available faculties and programs?">Faculties & programs</button>
       </div>
 
       <!-- Input area -->
