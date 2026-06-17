@@ -1,18 +1,10 @@
 /* chatbot.js
- * Fixes applied:
- *   RT-01 : user input no longer reaches innerHTML — textContent used for user bubbles
- *           fallback AI response HTML-escapes the reflected text
- *   RT-09 : sanitizeInput() strips null bytes / angle brackets / caps length
- *   RT-10 : inline onclick="sendQuick" replaced with addEventListener
- * AI Integration: POST https://ai.galalabot.app/api/chat (no chat history)
- * Chat History: persisted per session in sessionStorage for logged-in users only.
+ * Integration with Galala IAAS Laravel Backend
  */
 
 import APP_CONFIG from './config.js';
 
-const AI_CHAT_URL = `${APP_CONFIG.AI_BASE_URL}${APP_CONFIG.AI_ENDPOINTS.CHAT}`;
-
-/* ── HTML escape helper (RT-01) ──────────────────────────────────── */
+/* ── HTML escape helper ──────────────────────────────────────────── */
 function escapeHtml(str) {
   if (str == null) return '';
   return String(str)
@@ -23,83 +15,72 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-/* ── RT-09: Sanitize user input before any AI API call ───────────── */
+/* ── Sanitize user input ─────────────────────────────────────────── */
 function sanitizeInput(str) {
   if (str == null) return '';
   return String(str)
-    .replace(/\0/g, '')           // strip null bytes
-    .replace(/[<>]/g, '')         // strip angle brackets (prompt injection / HTML)
-    .substring(0, 500)            // hard length cap
+    .replace(/\0/g, '')           
+    .replace(/[<>]/g, '')         
+    .substring(0, 3000) // Backend max length is 3000
     .trim();
 }
 
-/* ── DOM refs (set after DOMContentLoaded) ───────────────────────── */
+/* ── DOM refs ────────────────────────────────────────────────────── */
 let chatBody, chatInput, sendBtn;
 
-/* ── Chat History State ──────────────────────────────────────────── */
-const HISTORY_KEY = 'chatbot_history'; // sessionStorage key
+/* ── State ───────────────────────────────────────────────────────── */
 let isLoggedIn = false;
-let allSessions = [];      // array of session objects
-let activeSessionId = null; // currently displayed session
+let token = null;
+let guestToken = null;
+let allSessions = [];      
+let activeSessionId = null; 
+let isPolling = false;
 
-/* A session object looks like:
-  {
-    id: string (timestamp),
-    title: string (first user message, truncated),
-    createdAt: ISO string,
-    messages: [{ role: 'user'|'ai', html: string, time: string }]
-  }
-*/
-
-/* ── Persistence helpers ─────────────────────────────────────────── */
-function loadHistory() {
-  try {
-    const raw = sessionStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveHistory() {
-  try {
-    sessionStorage.setItem(HISTORY_KEY, JSON.stringify(allSessions));
-  } catch { /* storage full — silently ignore */ }
-}
-
-function generateId() {
-  return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-}
-
-/* ── Create a brand-new session ──────────────────────────────────── */
-function createNewSession(firstMessage) {
-  const id = generateId();
-  const title = (firstMessage || 'New conversation').substring(0, 52) + (firstMessage && firstMessage.length > 52 ? '…' : '');
-  const session = {
-    id,
-    title,
-    createdAt: new Date().toISOString(),
-    messages: []
+/* ── API Helpers ─────────────────────────────────────────────────── */
+function getHeaders(isGuest = false) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   };
-  allSessions.unshift(session); // newest first
-  saveHistory();
-  return session;
+  
+  if (isGuest) {
+    if (guestToken) {
+      headers['X-Guest-Token'] = guestToken;
+    }
+  } else {
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  
+  return headers;
 }
 
-/* ── Get or create the active session ───────────────────────────── */
-function getActiveSession() {
-  if (!activeSessionId) return null;
-  return allSessions.find(s => s.id === activeSessionId) || null;
+/* ── History & Sidebar Management (Students Only) ────────────────── */
+
+async function fetchHistory() {
+  if (!isLoggedIn) return;
+  try {
+    const res = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}`, {
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.success && json.data && json.data.conversations) {
+      allSessions = json.data.conversations.map(c => ({
+        id: c.uuid,
+        title: c.title,
+        createdAt: c.last_message_at,
+        messages: [] 
+      }));
+    }
+  } catch (err) {
+    console.error('[chatbot] Failed to fetch history:', err);
+  }
 }
 
-/* ── Persist a message into the active session ───────────────────── */
-function persistMessage(role, html, time) {
-  const session = getActiveSession();
-  if (!session) return;
-  session.messages.push({ role, html, time });
-  saveHistory();
-}
-
-/* ── Render the sidebar list ─────────────────────────────────────── */
-function renderSidebar(filter = '') {
+async function renderSidebar(filter = '') {
+  if (!isLoggedIn) return;
   const list = document.getElementById('chs-list');
   const empty = document.getElementById('chs-empty');
   if (!list) return;
@@ -112,10 +93,10 @@ function renderSidebar(filter = '') {
   list.innerHTML = '';
 
   if (visible.length === 0) {
-    empty.hidden = false;
+    if(empty) empty.hidden = false;
     return;
   }
-  empty.hidden = true;
+  if(empty) empty.hidden = true;
 
   visible.forEach(session => {
     const item = document.createElement('div');
@@ -124,8 +105,6 @@ function renderSidebar(filter = '') {
     item.dataset.id = session.id;
 
     const dateLabel = formatSessionDate(session.createdAt);
-    const msgCount = session.messages.length;
-    const countLabel = msgCount === 0 ? 'Empty' : `${msgCount} message${msgCount > 1 ? 's' : ''}`;
 
     item.innerHTML = `
       <div class="chs-item-icon">
@@ -135,7 +114,7 @@ function renderSidebar(filter = '') {
       </div>
       <div class="chs-item-body">
         <div class="chs-item-title">${escapeHtml(session.title)}</div>
-        <div class="chs-item-meta"><span>${dateLabel}</span><span>${countLabel}</span></div>
+        <div class="chs-item-meta"><span>${dateLabel}</span></div>
       </div>
       <button class="chs-item-del" data-id="${escapeHtml(session.id)}" title="Delete conversation" aria-label="Delete conversation">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -144,13 +123,12 @@ function renderSidebar(filter = '') {
       </button>
     `;
 
-    // Click to load session
     item.addEventListener('click', (e) => {
       if (e.target.closest('.chs-item-del')) return;
+      if (isPolling) return; // Prevent switching while polling
       loadSession(session.id);
     });
 
-    // Delete button
     item.querySelector('.chs-item-del').addEventListener('click', (e) => {
       e.stopPropagation();
       deleteSession(session.id);
@@ -174,55 +152,79 @@ function formatSessionDate(isoString) {
   } catch { return ''; }
 }
 
-/* ── Load a session into the chat body ──────────────────────────── */
-function loadSession(sessionId) {
+/* ── Session Loading & Deletion ──────────────────────────────────── */
+
+async function loadSession(sessionId) {
   const session = allSessions.find(s => s.id === sessionId);
   if (!session) return;
 
   activeSessionId = sessionId;
-
-  // Clear chat body (keep greeting hidden if we have messages)
   chatBody.innerHTML = '';
-
-  if (session.messages.length === 0) {
-    // Re-add greeting
-    appendGreeting();
-  } else {
-    session.messages.forEach(m => {
-      appendMsgFromHistory(m.role, m.html, m.time);
-    });
-  }
-
-  // Update session label in header
-  updateSessionLabel(session);
-
-  // Show chips only for fresh sessions
+  
   const chips = document.getElementById('chat-chips');
-  if (chips) chips.hidden = session.messages.length > 0;
-
-  chatBody.scrollTop = chatBody.scrollHeight;
+  if (chips) chips.hidden = true;
+  
+  updateSessionLabel(session);
   renderSidebar(document.getElementById('chs-search')?.value || '');
-
-  // On mobile, close the sidebar after selecting
   closeMobileSidebar();
-}
 
-/* ── Delete a session ────────────────────────────────────────────── */
-function deleteSession(sessionId) {
-  allSessions = allSessions.filter(s => s.id !== sessionId);
-  saveHistory();
-
-  // If we deleted the active session, start fresh
-  if (activeSessionId === sessionId) {
-    activeSessionId = null;
-    startFreshChat();
-  } else {
-    renderSidebar(document.getElementById('chs-search')?.value || '');
+  try {
+    const res = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}/${sessionId}`, {
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    
+    if (json.success && json.data && json.data.messages) {
+      json.data.messages.forEach(m => {
+        if (m.status === 'completed') {
+           const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+           if (m.role === 'user') {
+             appendMsg('user', m.content, time);
+           } else {
+             let htmlContent = escapeHtml(m.content);
+             try {
+               const parsed = JSON.parse(m.content);
+               htmlContent = formatAIResponse(parsed);
+             } catch(e) {
+               htmlContent = `<p>${htmlContent}</p>`;
+             }
+             appendMsgFromHistory('ai', htmlContent, time);
+           }
+        }
+      });
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  } catch (err) {
+    console.error('[chatbot] Failed to load session messages:', err);
+    appendMsg('ai', `<span style="color:var(--error,#f87171)">Failed to load messages.</span>`);
   }
 }
 
-/* ── Start a completely fresh (no-session) chat ─────────────────── */
+async function deleteSession(sessionId) {
+  try {
+    const res = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}/${sessionId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    allSessions = allSessions.filter(s => s.id !== sessionId);
+    
+    if (activeSessionId === sessionId) {
+      activeSessionId = null;
+      startFreshChat();
+    } else {
+      renderSidebar(document.getElementById('chs-search')?.value || '');
+    }
+  } catch (err) {
+    console.error('[chatbot] Failed to delete session:', err);
+    alert('Failed to delete chat. Please try again.');
+  }
+}
+
 function startFreshChat() {
+  if (isPolling) return; // don't start fresh if currently waiting for AI
   activeSessionId = null;
   chatBody.innerHTML = '';
   appendGreeting();
@@ -234,10 +236,264 @@ function startFreshChat() {
   if (label) label.textContent = '';
 
   chatBody.scrollTop = chatBody.scrollHeight;
-  renderSidebar(document.getElementById('chs-search')?.value || '');
+  if(isLoggedIn) renderSidebar(document.getElementById('chs-search')?.value || '');
 }
 
-/* ── Append the default AI greeting ─────────────────────────────── */
+/* ── Sending & Polling ───────────────────────────────────────────── */
+
+async function send() {
+  if (isPolling) return;
+
+  const raw = chatInput.value.trim();
+  if (!raw) return;
+
+  const text = sanitizeInput(raw);
+  if (!text) return;
+
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  appendMsg('user', text, time);
+
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+
+  const chips = document.getElementById('chat-chips');
+  if (chips) chips.hidden = true;
+
+  showTyping();
+  isPolling = true;
+  disableInput(true);
+
+  if (isLoggedIn) {
+    await sendStudentMessage(text);
+  } else {
+    await sendGuestMessage(text);
+  }
+}
+
+async function sendStudentMessage(text) {
+  const clientMsgId = crypto.randomUUID();
+  let url = `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}`;
+  if (activeSessionId) {
+    url += `/${activeSessionId}/messages`;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: getHeaders(false),
+      body: JSON.stringify({
+        message: text,
+        client_message_id: clientMsgId
+      })
+    });
+
+    if (!res.ok) {
+        if (res.status === 409) throw new Error('Conflict: A message is already pending.');
+        throw new Error(`HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+    if (json.success && json.data) {
+      const chatUuid = json.data.chat.uuid;
+      const assistantMsgUuid = json.data.assistant_message.uuid;
+      
+      if (!activeSessionId) {
+        activeSessionId = chatUuid;
+        await fetchHistory();
+        updateSessionLabel(allSessions.find(s => s.id === chatUuid));
+        renderSidebar(document.getElementById('chs-search')?.value || '');
+      }
+
+      pollStudentStatus(chatUuid, assistantMsgUuid);
+    } else {
+        throw new Error('Invalid response from server');
+    }
+  } catch (err) {
+    handleSendError(err);
+  }
+}
+
+async function sendGuestMessage(text) {
+  const url = `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.GUEST_CHAT_MESSAGES}`;
+  
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify({ message: text })
+    });
+
+    if (!res.ok) {
+        if (res.status === 409) throw new Error('Conflict: A response is already being processed.');
+        throw new Error(`HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+    if (json.success && json.data) {
+      if (json.data.guest_token) {
+        guestToken = json.data.guest_token;
+        sessionStorage.setItem('guest_token', guestToken);
+      }
+      const requestId = json.data.request_id;
+      pollGuestStatus(requestId);
+    } else {
+      throw new Error('Invalid response from server');
+    }
+  } catch (err) {
+    handleSendError(err);
+  }
+}
+
+function handleSendError(err) {
+  removeTyping();
+  isPolling = false;
+  disableInput(false);
+  const errHtml = `<span style="color:var(--error,#f87171)">Sorry, I couldn't reach the AI right now. Please try again.</span>`;
+  appendMsg('ai', errHtml);
+  console.error('[chatbot] AI API error:', err);
+}
+
+async function pollStudentStatus(chatUuid, messageUuid) {
+  const pollInterval = 3000;
+  const url = `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}/${chatUuid}/messages/${messageUuid}/status`;
+
+  try {
+    const res = await fetch(url, { headers: getHeaders(false) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    if (json.success && json.data && json.data.assistant_message) {
+      const status = json.data.assistant_message.status;
+      
+      if (status === 'completed') {
+        handleCompletedPoll(json.data.assistant_message.content);
+        await fetchHistory();
+        renderSidebar(document.getElementById('chs-search')?.value || '');
+      } else if (status === 'failed') {
+        handleFailedPoll(json.data.ai_request?.error_code);
+      } else {
+        setTimeout(() => pollStudentStatus(chatUuid, messageUuid), pollInterval);
+      }
+    }
+  } catch (err) {
+    console.error('[chatbot] Polling error:', err);
+    setTimeout(() => pollStudentStatus(chatUuid, messageUuid), pollInterval);
+  }
+}
+
+async function pollGuestStatus(requestId) {
+  const pollInterval = 3000;
+  const url = `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.GUEST_CHAT_MESSAGES}/${requestId}/status`;
+
+  try {
+    const res = await fetch(url, { headers: getHeaders(true) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    if (json.success && json.data) {
+      const status = json.data.status;
+      
+      if (status === 'completed') {
+        handleCompletedPoll(json.data.response);
+      } else if (status === 'failed') {
+        handleFailedPoll(json.data.error_code);
+      } else {
+        setTimeout(() => pollGuestStatus(requestId), pollInterval);
+      }
+    }
+  } catch (err) {
+    console.error('[chatbot] Polling error:', err);
+    setTimeout(() => pollGuestStatus(requestId), pollInterval);
+  }
+}
+
+function handleCompletedPoll(content) {
+    removeTyping();
+    isPolling = false;
+    disableInput(false);
+    
+    let htmlContent = escapeHtml(content);
+    try {
+      const parsed = JSON.parse(content);
+      htmlContent = formatAIResponse(parsed);
+    } catch(e) {
+       htmlContent = `<p>${htmlContent}</p>`;
+    }
+    
+    const aiTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    appendMsgFromHistory('ai', htmlContent, aiTime);
+}
+
+function handleFailedPoll(errorCode) {
+    removeTyping();
+    isPolling = false;
+    disableInput(false);
+    const code = errorCode || 'UNKNOWN_ERROR';
+    const errHtml = `<span style="color:var(--error,#f87171)">AI Request Failed (${code}). Please try again later.</span>`;
+    appendMsg('ai', errHtml);
+}
+
+function disableInput(disabled) {
+    chatInput.disabled = disabled;
+    sendBtn.disabled = disabled;
+    if (disabled) {
+        chatInput.style.opacity = '0.5';
+        sendBtn.style.opacity = '0.5';
+    } else {
+        chatInput.style.opacity = '1';
+        sendBtn.style.opacity = '1';
+        chatInput.focus();
+    }
+}
+
+/* ── Init sidebar for logged-in users ───────────────────────────── */
+async function initHistorySidebar() {
+  token = sessionStorage.getItem('student_token');
+  isLoggedIn = !!token;
+  
+  if (!isLoggedIn) {
+     guestToken = sessionStorage.getItem('guest_token');
+     return;
+  }
+
+  const sidebar = document.getElementById('chat-history-sidebar');
+  if (sidebar) sidebar.hidden = false;
+
+  const layout = document.getElementById('chatbot-app-layout');
+  if (layout) layout.classList.add('chatbot-app-layout--with-sidebar');
+
+  const mobileToggle = document.getElementById('chs-mobile-toggle');
+  if (mobileToggle) mobileToggle.hidden = false;
+
+  await fetchHistory();
+  renderSidebar();
+
+  document.getElementById('new-chat-btn')?.addEventListener('click', startFreshChat);
+  document.getElementById('chs-search')?.addEventListener('input', (e) => {
+    renderSidebar(e.target.value);
+  });
+  document.getElementById('chs-mobile-toggle')?.addEventListener('click', () => {
+    sidebar?.classList.toggle('chs-mobile-open');
+  });
+}
+
+/* ── DOM & Render Utilities ──────────────────────────────────────── */
+
+function closeMobileSidebar() {
+  document.getElementById('chat-history-sidebar')?.classList.remove('chs-mobile-open');
+}
+
+function updateSessionLabel(session) {
+  const label = document.getElementById('chat-session-label');
+  if (!label) return;
+  if (session && session.createdAt) {
+    const d = new Date(session.createdAt);
+    label.textContent = `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  } else {
+    label.textContent = '';
+  }
+}
+
 function appendGreeting() {
   const rawName = sessionStorage.getItem('student_name');
   const studentName = (typeof rawName === 'string' && rawName.trim()) ? rawName.trim().split(' ')[0] : null;
@@ -254,7 +510,7 @@ function appendGreeting() {
 
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
-  bubble.innerHTML = greeting; // controlled HTML — safe
+  bubble.innerHTML = greeting;
 
   const timeEl = document.createElement('div');
   timeEl.className = 'msg-time';
@@ -266,204 +522,10 @@ function appendGreeting() {
 
   wrap.appendChild(avatar);
   wrap.appendChild(inner);
-  chatBody.appendChild(wrap);
+  
+  if (chatBody) chatBody.appendChild(wrap);
 }
 
-/* ── Update the header session label ────────────────────────────── */
-function updateSessionLabel(session) {
-  const label = document.getElementById('chat-session-label');
-  if (!label) return;
-  if (session) {
-    const d = new Date(session.createdAt);
-    label.textContent = `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  } else {
-    label.textContent = '';
-  }
-}
-
-/* ── Init sidebar for logged-in users ───────────────────────────── */
-function initHistorySidebar() {
-  const token = sessionStorage.getItem('student_token');
-  isLoggedIn = !!token;
-
-  if (!isLoggedIn) return;
-
-  // Show sidebar
-  const sidebar = document.getElementById('chat-history-sidebar');
-  if (sidebar) sidebar.hidden = false;
-
-  // Switch layout to two-column
-  const layout = document.getElementById('chatbot-app-layout');
-  if (layout) layout.classList.add('chatbot-app-layout--with-sidebar');
-
-  // Show mobile toggle
-  const mobileToggle = document.getElementById('chs-mobile-toggle');
-  if (mobileToggle) mobileToggle.hidden = false;
-
-  // Load persisted sessions
-  allSessions = loadHistory();
-  renderSidebar();
-
-  // New chat button
-  document.getElementById('new-chat-btn')?.addEventListener('click', startFreshChat);
-
-  // Search
-  document.getElementById('chs-search')?.addEventListener('input', (e) => {
-    renderSidebar(e.target.value);
-  });
-
-  // Mobile sidebar toggle
-  document.getElementById('chs-mobile-toggle')?.addEventListener('click', () => {
-    sidebar?.classList.toggle('chs-mobile-open');
-  });
-}
-
-function closeMobileSidebar() {
-  document.getElementById('chat-history-sidebar')?.classList.remove('chs-mobile-open');
-}
-
-/* ── Auto-grow textarea ──────────────────────────────────────────── */
-function initChatInput() {
-  chatBody  = document.getElementById('chat-body');
-  chatInput = document.getElementById('chat-input');
-  sendBtn   = document.getElementById('send-btn');
-
-  if (!chatInput || !sendBtn || !chatBody) return;
-
-  chatInput.addEventListener('input', () => {
-    chatInput.style.height = 'auto';
-    chatInput.style.height = Math.min(chatInput.scrollHeight, 130) + 'px';
-  });
-
-  /* Send on Enter (Shift+Enter = newline) */
-  chatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-  });
-
-  sendBtn.addEventListener('click', send);
-
-  /* RT-10: Replace inline onclick="sendQuick(this)" on chip buttons */
-  document.querySelectorAll('.chip[data-quick]').forEach(chip => {
-    chip.addEventListener('click', () => sendQuick(chip));
-  });
-
-  /* RT-10/RT-11: Replace inline onclick="askFAQ(...)" on FAQ chips */
-  document.querySelectorAll('.faq-chip[data-question]').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chatInput.value = chip.dataset.question;
-      chatInput.dispatchEvent(new Event('input'));
-      send();
-    });
-  });
-}
-
-/* ── sendQuick used by chip buttons ──────────────────────────────── */
-function sendQuick(el) {
-  chatInput.value = el.dataset.quick || el.textContent.trim();
-  send();
-}
-
-/* ── Core send ───────────────────────────────────────────────────── */
-async function send() {
-  const raw = chatInput.value.trim();
-  if (!raw) return;
-
-  /* RT-09: sanitize before display AND before API call */
-  const text = sanitizeInput(raw);
-  if (!text) return;
-
-  /* Create a session on first message (logged-in only) */
-  if (isLoggedIn && !activeSessionId) {
-    const session = createNewSession(text);
-    activeSessionId = session.id;
-    updateSessionLabel(session);
-    renderSidebar(document.getElementById('chs-search')?.value || '');
-
-    // Hide chips after first message
-    const chips = document.getElementById('chat-chips');
-    if (chips) chips.hidden = true;
-  }
-
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  appendMsg('user', text, time);
-  if (isLoggedIn) persistMessage('user', escapeHtml(text), time);
-
-  chatInput.value = '';
-  chatInput.style.height = 'auto';
-
-  showTyping();
-
-  try {
-    const res = await fetch(AI_CHAT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, chat_history: [] })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
-    removeTyping();
-    const aiHtml = formatAIResponse(data);
-    const aiTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    appendMsg('ai', aiHtml, aiTime);
-    if (isLoggedIn) persistMessage('ai', aiHtml, aiTime);
-
-    // Refresh sidebar to update message count
-    if (isLoggedIn) renderSidebar(document.getElementById('chs-search')?.value || '');
-  } catch (err) {
-    removeTyping();
-    const errHtml = `<span style="color:var(--error,#f87171)">Sorry, I couldn't reach the AI right now. Please try again in a moment.</span>`;
-    appendMsg('ai', errHtml);
-    console.error('[chatbot] AI API error:', err);
-  }
-}
-
-/* ── Format the structured AI response into HTML ─────────────────── */
-function formatAIResponse(data) {
-  let html = '';
-
-  if (data.your_case) {
-    html += `<p><strong>${escapeHtml(data.your_case)}</strong></p>`;
-  }
-
-  if (data.what_this_means) {
-    html += `<p>${escapeHtml(data.what_this_means)}</p>`;
-  }
-
-  if (Array.isArray(data.what_you_need) && data.what_you_need.length) {
-    html += `<p><strong>What you need:</strong></p><ul>`;
-    data.what_you_need.forEach(item => {
-      html += `<li>${escapeHtml(item)}</li>`;
-    });
-    html += `</ul>`;
-  }
-
-  if (Array.isArray(data.what_to_do_now) && data.what_to_do_now.length) {
-    html += `<p><strong>What to do now:</strong></p><ul>`;
-    data.what_to_do_now.forEach(step => {
-      html += `<li>${escapeHtml(step)}</li>`;
-    });
-    html += `</ul>`;
-  }
-
-  if (Array.isArray(data.when_to_contact_admission_office) && data.when_to_contact_admission_office.length) {
-    html += `<p><strong>Contact admissions if:</strong></p><ul>`;
-    data.when_to_contact_admission_office.forEach(cond => {
-      html += `<li>${escapeHtml(cond)}</li>`;
-    });
-    html += `</ul>`;
-  }
-
-  /* Fallback if response has no recognisable fields */
-  if (!html) {
-    html = `<p>I received a response but couldn't parse it. Please try rephrasing your question.</p>`;
-  }
-
-  return html;
-}
-
-/* ── RT-01 FIX: appendMsg — user messages use textContent, never innerHTML ── */
 function appendMsg(role, htmlOrText, time) {
   const msgTime = time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const wrap = document.createElement('div');
@@ -477,23 +539,17 @@ function appendMsg(role, htmlOrText, time) {
   timeEl.textContent = msgTime;
 
   if (role === 'ai') {
-    /* AI responses are sanitized/escaped HTML — safe to use innerHTML */
     bubbleEl.innerHTML = htmlOrText;
-
     const avatar = document.createElement('div');
     avatar.className = 'msg-avatar';
     avatar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>`;
-
     const inner = document.createElement('div');
     inner.appendChild(bubbleEl);
     inner.appendChild(timeEl);
-
     wrap.appendChild(avatar);
     wrap.appendChild(inner);
   } else {
-    /* RT-01 FIX: User input — ALWAYS textContent, never innerHTML */
     bubbleEl.textContent = htmlOrText;
-
     const inner = document.createElement('div');
     inner.appendChild(bubbleEl);
     inner.appendChild(timeEl);
@@ -504,14 +560,13 @@ function appendMsg(role, htmlOrText, time) {
   chatBody.scrollTop = chatBody.scrollHeight;
 }
 
-/* ── Append message when replaying history (both roles stored as HTML) ── */
 function appendMsgFromHistory(role, html, time) {
   const wrap = document.createElement('div');
   wrap.className = `msg msg-${role}`;
 
   const bubbleEl = document.createElement('div');
   bubbleEl.className = 'msg-bubble';
-  bubbleEl.innerHTML = html; // stored as escaped HTML
+  bubbleEl.innerHTML = html; 
 
   const timeEl = document.createElement('div');
   timeEl.className = 'msg-time';
@@ -534,6 +589,7 @@ function appendMsgFromHistory(role, html, time) {
   }
 
   chatBody.appendChild(wrap);
+  chatBody.scrollTop = chatBody.scrollHeight;
 }
 
 function showTyping() {
@@ -558,8 +614,67 @@ function removeTyping() {
   if (el) el.remove();
 }
 
+function formatAIResponse(data) {
+  let html = '';
+  if (data.your_case) html += `<p><strong>${escapeHtml(data.your_case)}</strong></p>`;
+  if (data.what_this_means) html += `<p>${escapeHtml(data.what_this_means)}</p>`;
+  if (Array.isArray(data.what_you_need) && data.what_you_need.length) {
+    html += `<p><strong>What you need:</strong></p><ul>`;
+    data.what_you_need.forEach(item => html += `<li>${escapeHtml(item)}</li>`);
+    html += `</ul>`;
+  }
+  if (Array.isArray(data.what_to_do_now) && data.what_to_do_now.length) {
+    html += `<p><strong>What to do now:</strong></p><ul>`;
+    data.what_to_do_now.forEach(step => html += `<li>${escapeHtml(step)}</li>`);
+    html += `</ul>`;
+  }
+  if (Array.isArray(data.when_to_contact_admission_office) && data.when_to_contact_admission_office.length) {
+    html += `<p><strong>Contact admissions if:</strong></p><ul>`;
+    data.when_to_contact_admission_office.forEach(cond => html += `<li>${escapeHtml(cond)}</li>`);
+    html += `</ul>`;
+  }
+  if (!html) {
+    // Try to handle unexpected object shapes
+    html = `<p>${escapeHtml(JSON.stringify(data))}</p>`;
+  }
+  return html;
+}
+
 /* ── Init ────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
+function initChatInput() {
+  chatBody  = document.getElementById('chat-body');
+  chatInput = document.getElementById('chat-input');
+  sendBtn   = document.getElementById('send-btn');
+
+  if (!chatInput || !sendBtn || !chatBody) return;
+
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 130) + 'px';
+  });
+
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  sendBtn.addEventListener('click', send);
+
+  document.querySelectorAll('.chip[data-quick]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chatInput.value = chip.dataset.quick || chip.textContent.trim();
+      send();
+    });
+  });
+  
+  document.querySelectorAll('.faq-chip[data-question]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chatInput.value = chip.dataset.question || chip.textContent.trim();
+      send();
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   initChatInput();
-  initHistorySidebar();
+  await initHistorySidebar();
 });

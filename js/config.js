@@ -1,7 +1,6 @@
 /* config.js — RT-04 FIX: Export as ES Module to prevent global mutation */
 const APP_CONFIG = Object.freeze({
-    API_BASE_URL: "https://api.galalabot.app/api/v1",
-    AI_BASE_URL:  "https://ai.galalabot.app/api",
+    API_BASE_URL: "https://admin.galalabot.app/api/v1",
     ENDPOINTS: Object.freeze({
         /* ── Student / Auth ── */
         STUDENT_LOGIN:            "/student/login",
@@ -10,11 +9,12 @@ const APP_CONFIG = Object.freeze({
         STUDENT_VEHICLE:          "/student/vehicle",
         STUDENT_VEHICLE_REQUESTS: "/student/vehicle-requests",
         STUDENT_VEHICLE_HISTORY:  "/student/vehicle-requests/history",
-    }),
-    AI_ENDPOINTS: Object.freeze({
-        /* ── Chatbot ── */
-        CHAT:   "/chat",        // POST  { message, chat_history[] }
-        HEALTH: "/health",      // GET   — liveness check
+        
+        /* ── Student Chatbot ── */
+        STUDENT_CHATS:            "/student/chats", 
+        
+        /* ── Guest Chatbot ── */
+        GUEST_CHAT_MESSAGES:      "/guest/chat/messages",
     }),
 });
 
