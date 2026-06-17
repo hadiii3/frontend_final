@@ -177,11 +177,12 @@ async function loadSession(sessionId) {
     
     if (json.success && json.data && json.data.messages) {
       json.data.messages.forEach(m => {
-        if (m.status === 'completed') {
-           const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-           if (m.role === 'user') {
-             appendMsg('user', m.content, time);
-           } else {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        if (m.role === 'user') {
+           appendMsg('user', m.content, time);
+        } else {
+           if (m.status === 'completed') {
              let htmlContent = escapeHtml(m.content);
              try {
                const parsed = JSON.parse(m.content);
@@ -190,6 +191,14 @@ async function loadSession(sessionId) {
                htmlContent = `<p>${htmlContent}</p>`;
              }
              appendMsgFromHistory('ai', htmlContent, time);
+           } else if (m.status === 'queued' || m.status === 'processing') {
+             showTyping();
+             isPolling = true;
+             disableInput(true);
+             pollStudentStatus(sessionId, m.uuid);
+           } else if (m.status === 'failed') {
+             const errHtml = `<span style="color:var(--error,#f87171)">AI Request Failed. Please try again.</span>`;
+             appendMsg('ai', errHtml, time);
            }
         }
       });
@@ -495,35 +504,7 @@ function updateSessionLabel(session) {
 }
 
 function appendGreeting() {
-  const rawName = sessionStorage.getItem('student_name');
-  const studentName = (typeof rawName === 'string' && rawName.trim()) ? rawName.trim().split(' ')[0] : null;
-  const greeting = studentName
-    ? `Hello, ${escapeHtml(studentName)}! 👋 I'm the <strong>Galala University Intelligent Admission Assistant</strong>. I can guide you through <strong>admission requirements</strong>, <strong>application procedures</strong>, <strong>required documents</strong>, <strong>deadlines</strong>, and any other admission-related questions. How can I help you today?`
-    : `Hello! 👋 I'm the <strong>Galala University Intelligent Admission Assistant</strong>. I can guide you through <strong>admission requirements</strong>, <strong>application procedures</strong>, <strong>required documents</strong>, <strong>deadlines</strong>, and any other admission-related questions. How can I help you today?`;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'msg msg-ai';
-
-  const avatar = document.createElement('div');
-  avatar.className = 'msg-avatar';
-  avatar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>`;
-
-  const bubble = document.createElement('div');
-  bubble.className = 'msg-bubble';
-  bubble.innerHTML = greeting;
-
-  const timeEl = document.createElement('div');
-  timeEl.className = 'msg-time';
-  timeEl.textContent = 'Just now';
-
-  const inner = document.createElement('div');
-  inner.appendChild(bubble);
-  inner.appendChild(timeEl);
-
-  wrap.appendChild(avatar);
-  wrap.appendChild(inner);
-  
-  if (chatBody) chatBody.appendChild(wrap);
+  // Removed as per user request
 }
 
 function appendMsg(role, htmlOrText, time) {
