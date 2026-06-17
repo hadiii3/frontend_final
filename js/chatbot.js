@@ -394,7 +394,7 @@ async function pollGuestStatus(requestId) {
       const status = json.data.status;
       
       if (status === 'completed') {
-        handleCompletedPoll(json.data.response);
+        handleCompletedPoll(json.data.content);
       } else if (status === 'failed') {
         handleFailedPoll(json.data.error_code);
       } else {
