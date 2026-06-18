@@ -1,6 +1,6 @@
 /* config.js — RT-04 FIX: Export as ES Module to prevent global mutation */
 const APP_CONFIG = Object.freeze({
-    API_BASE_URL: "https://admin.galalabot.app/api/v1",
+    API_BASE_URL: "https://api.galalabot.app/api/v1",
     ENDPOINTS: Object.freeze({
         /* ── Student / Auth ── */
         STUDENT_LOGIN:            "/student/login",
