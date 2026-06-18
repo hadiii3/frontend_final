@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- RT-12: Clickjacking protection -->
-  <meta http-equiv="X-Frame-Options" content="DENY">
   <!-- RT-16: Referrer policy -->
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Admission Chatbot | Galala Uni</title>
@@ -70,6 +68,16 @@
       .faq-panel { display: none; }
     }
   </style>
+  <!-- Framekiller script to prevent clickjacking -->
+  <style id="antiClickjack">body{display:none !important;}</style>
+  <script type="text/javascript">
+    if (self === top) {
+        var antiClickjack = document.getElementById("antiClickjack");
+        if (antiClickjack) antiClickjack.parentNode.removeChild(antiClickjack);
+    } else {
+        top.location = self.location;
+    }
+  </script>
 </head>
 <body style="background:var(--col-surface-low);">
 
