@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- RT-12: Clickjacking protection -->
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <!-- RT-16: Don't leak referrer to third-party origins -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Dashboard | Galala Uni</title>
+  <meta name="description" content="Your Galala Uni student dashboard — academic records, AI assistant, vehicle permit, and all campus tools in one place." />
+  <link href="../css/fonts/fonts.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/globals.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+
+  <!-- NAV (dark) -->
+  <header class="nav-glass nav-dark" id="main-nav">
+    <div class="nav-inner">
+      <a href="dashboard.html" class="brand">
+        <img src="../gu_logo.png" alt="Galala Uni Logo" class="brand-logo" style="height:36px; width:auto; border-radius:4px;" />
+      </a>
+      <nav class="nav-links">
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="chatbot.html">AI Assistant</a>
+        <a href="vehicle.html">Vehicle</a>
+        <a href="help.html">Help</a>
+      </nav>
+      <div class="nav-student-info">
+        <div class="nav-student-avatar"></div>
+        <span class="nav-student-name"></span>
+        <a href="#" class="btn btn-ghost logout-btn" style="color:rgba(255,255,255,.6);font-size:.875rem;">Sign Out</a>
+      </div>
+      <button class="nav-mobile-toggle" aria-label="Toggle menu" id="mobile-menu-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="mobile-menu">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chatbot.html">AI Assistant</a>
+      <a href="vehicle.html">Vehicle</a>
+      <a href="help.html">Help</a>
+      <a href="#" class="logout-btn">Sign Out</a>
+    </div>
+  </header>
+
+  <!-- PAGE BODY -->
+  <div class="portal-page">
+    <div class="portal-content">
+
+      <!-- API error banner (shown when profile fetch fails with non-auth error) -->
+      <div id="dash-error-banner" style="display:none; align-items:center; gap:12px; padding:16px 20px; background:#fef2f2; border:1.5px solid #fca5a5; border-radius:12px; color:#991b1b; font-size:.9rem; margin-bottom:24px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Could not load your profile. The server may be temporarily unavailable. <a href="dashboard.html" style="color:#991b1b;font-weight:600;">Try again</a></span>
+      </div>
+
+      <!-- Page Header -->
+      <div class="dash-header">
+        <div class="dash-header-top">
+          <div>
+            <div class="dash-welcome">Good afternoon, <strong></strong></div>
+            <h1 class="dash-title">Your Academic Portal</h1>
+            <p class="dash-subtitle">Your portal to academic excellence and campus integration.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identity card -->
+      <div class="identity-card">
+        <div class="identity-avatar"></div>
+        <div class="identity-info">
+          <div class="identity-name"></div>
+          <div class="identity-meta">
+            <div class="identity-meta-item faculty">
+            </div>
+            <div class="identity-meta-item student-id">
+            </div>
+            <div class="identity-meta-item">
+              Academic Year: 2025–2026
+            </div>
+          </div>
+        </div>
+        <span class="identity-badge"></span>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="quick-grid">
+        <a href="chatbot.html" class="quick-card quick-card-blue">
+          <div class="qc-icon qc-icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          </div>
+          <div class="qc-title">Academic Assistant</div>
+          <div class="qc-desc">Ask about course registration, deadlines, or campus policy.</div>
+          <div class="qc-cta">
+            Start Chat
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+          </div>
+        </a>
+
+        <a href="vehicle.html" class="quick-card quick-card-green">
+          <div class="qc-icon qc-icon-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>
+          </div>
+          <div class="qc-title">Vehicle Permit</div>
+          <div class="qc-desc">Register your vehicle for the 2026 academic parking access.</div>
+          <div class="qc-cta">
+            Manage
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+          </div>
+        </a>
+      </div>
+
+      <!-- Bottom grid -->
+      <div class="dash-bottom">
+
+        <!-- Left col (Profile data) -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-6);">
+          <!-- Personal Information -->
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Personal Information
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Full Name</div>
+                <div class="info-value full-name"></div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Date of Birth</div>
+                <!-- RT-19: No hardcoded PII — value populated by JS from API -->
+                <div class="info-value dob"></div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">University Email</div>
+                <div class="info-value email"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right col -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-6);">
+          <!-- GPA -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:var(--space-4);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904"/></svg>
+              Academic Standing
+            </div>
+            <div class="academic-standing-flex" style="display:flex;align-items:center;gap:var(--space-5);">
+              <div class="gpa-ring-wrap">
+                <div class="gpa-ring">
+                  <svg viewBox="0 0 96 96" width="96" height="96">
+                    <circle class="gpa-ring-bg" cx="48" cy="48" r="38"/>
+                    <circle class="gpa-ring-fill" cx="48" cy="48" r="38"
+                      stroke-dasharray="238.76"
+                      stroke-dashoffset="65.65"
+                    />
+                  </svg>
+                  <div class="gpa-ring-text">
+                    <!-- RT-19: No hardcoded GPA — populated by JS -->
+                    <div class="gpa-value">—</div>
+                    <div class="gpa-label">GPA</div>
+                  </div>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div class="credit-bar-wrap">
+                  <div style="display:flex;justify-content:space-between;font-size:.8125rem;margin-bottom:var(--space-2);">
+                    <span style="color:var(--col-on-muted);">Credit Hours</span>
+                    <span style="font-weight:600;">— / —</span>
+                  </div>
+                  <div class="credit-bar-track">
+                    <div class="credit-bar-fill" style="width:0%;"></div>
+                  </div>
+                  <div class="credit-bar-labels">
+                    <span>—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="../js/nav.js"></script>
+  <script type="module" src="../js/dashboard.js"></script>
+</body>
+</html>
