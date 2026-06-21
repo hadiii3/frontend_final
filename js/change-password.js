@@ -96,15 +96,17 @@ async function handleChangePassword(e) {
     const data = await res.json();
 
     if (data.success) {
-      /* Mark this student as having changed their password — won't be forced again */
-      const studentId = sessionStorage.getItem('student_id');
-      if (studentId) localStorage.setItem('pwd_changed_' + studentId, '1');
+      /*
+       * Password changed successfully.
+       * Clear the first-login reminder flag so the dashboard banner
+       * won't show again if the student navigates back this session.
+       */
+      sessionStorage.removeItem('first_login');
 
       document.getElementById('change-pwd-form').reset();
       successEl.style.display = 'flex';
       btn.textContent = 'Redirecting…';
       btn.disabled    = true;
-      /* Redirect to dashboard after short delay so student sees the success message */
       setTimeout(() => window.location.replace('dashboard.html'), 1500);
     } else {
       /* 422 or other backend error */

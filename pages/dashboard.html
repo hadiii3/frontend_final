@@ -63,6 +63,16 @@
         <span>Could not load your profile. The server may be temporarily unavailable. <a href="dashboard.html" style="color:#991b1b;font-weight:600;">Try again</a></span>
       </div>
 
+      <!-- First-login security reminder (shown once per session, dismissible) -->
+      <div id="pwd-reminder-banner" style="display:none; align-items:center; gap:14px; padding:14px 20px; background:linear-gradient(135deg,#fffbeb,#fef3c7); border:1.5px solid #fcd34d; border-radius:12px; color:#92400e; font-size:.9rem; margin-bottom:24px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:#d97706;"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+        <span style="flex:1;">
+          <strong>Security reminder:</strong> You are using your initial admin-assigned password.
+          Please <a href="change-password.html" style="color:#92400e;font-weight:700;text-decoration:underline;">change your password</a> to secure your account.
+        </span>
+        <button id="pwd-reminder-dismiss" aria-label="Dismiss security reminder" style="background:none;border:none;cursor:pointer;color:#92400e;opacity:.7;font-size:1.25rem;padding:2px 6px;line-height:1;flex-shrink:0;" title="Dismiss">&#10005;</button>
+      </div>
+
       <!-- Page Header -->
       <div class="dash-header">
         <div class="dash-header-top">
