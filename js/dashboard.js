@@ -118,3 +118,21 @@ async function loadDashboard() {
 }
 
 document.addEventListener('DOMContentLoaded', loadDashboard);
+
+/* ── Security banner: show unless dismissed this session ───────── */
+document.addEventListener('DOMContentLoaded', () => {
+  const banner   = document.getElementById('pwd-security-banner');
+  const dismissBtn = document.getElementById('pwd-banner-dismiss');
+  if (!banner) return;
+
+  if (!sessionStorage.getItem('pwd_banner_dismissed')) {
+    banner.style.display = 'flex';
+  }
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      banner.style.display = 'none';
+      sessionStorage.setItem('pwd_banner_dismissed', '1');
+    });
+  }
+});

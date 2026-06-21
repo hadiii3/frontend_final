@@ -27,7 +27,7 @@
 ## 1. Project Overview
 
 ### What the System Does
-**Galala Uni** is a university student portal and admission gateway — a static, pure-HTML/CSS/JavaScript front-end web application that connects enrolled students and prospective applicants to their academic world. It acts as a thin client that communicates entirely with a remote REST API backend (`api.eightyeightevents.me`) and optionally an AI service endpoint (`ai.eightyeightevents.me`).
+**Galala Uni** is a university student portal and admission gateway — a static, pure-HTML/CSS/JavaScript front-end web application that connects enrolled students and prospective applicants to their academic world. It acts as a thin client that communicates entirely with a remote REST API backend (`api.galalabot.app`) and optionally an AI service endpoint (`ai.galalabot.app`).
 
 ### Main Business / Domain Purpose
 - **University of Galala** (Egypt) student-facing portal.
@@ -79,8 +79,8 @@ There are **no admin roles** in this frontend — administration is backend-only
 ### Backend (Remote — Not in this repo)
 | Layer | Technology | Notes |
 |---|---|---|
-| API Base | `https://api.eightyeightevents.me/api/v1` | REST JSON API, inferred Laravel/PHP or similar |
-| AI Service | `https://ai.eightyeightevents.me` | Separate subdomain, unused in current JS |
+| API Base | `https://api.galalabot.app/api/v1` | REST JSON API, inferred Laravel/PHP or similar |
+| AI Service | `https://ai.galalabot.app` | Separate subdomain, unused in current JS |
 | Auth | Bearer Token (JWT-style) | Issued at `/student/login`, invalidated at `/student/logout` |
 | Protocol | HTTPS only | Both API and AI endpoints are HTTPS |
 
@@ -92,7 +92,7 @@ There are **no admin roles** in this frontend — administration is backend-only
 | Component | Details |
 |---|---|
 | Hosting | Static file server (no server-side rendering) |
-| Domain inferred | `eightyeightevents.me` (shared with API) |
+| Domain inferred | `galalabot.app` (shared with API) |
 | SSL | Yes (both API URLs are HTTPS) |
 | CDN | Unknown — not confirmed by code |
 | Backend infra | Unknown — separate repo, separate domain |
@@ -105,8 +105,8 @@ There are **no admin roles** in this frontend — administration is backend-only
 - **None** in this frontend. No error tracking (Sentry, etc.), no analytics scripts, no logging framework. Errors are silently swallowed (`catch {}` with no logging — RT-15 intentional fix).
 
 ### External Integrations
-- `https://api.eightyeightevents.me/api/v1` — Primary backend REST API
-- `https://ai.eightyeightevents.me` — AI service (configured but not yet connected in code)
+- `https://api.galalabot.app/api/v1` — Primary backend REST API
+- `https://ai.galalabot.app` — AI service (configured but not yet connected in code)
 
 ---
 
@@ -197,7 +197,7 @@ graph TD
     end
 
     subgraph "AI Service (Configured, Unused)"
-        O[ai.eightyeightevents.me]
+        O[ai.galalabot.app]
     end
 
     F -->|GET + Bearer| J
@@ -216,13 +216,19 @@ graph TD
 sequenceDiagram
     participant Browser
     participant LoginJS as login.js
-    participant API as api.eightyeightevents.me
+    participant API as api.galalabot.app
     participant SessionStorage
 
     Browser->>LoginJS: form submit (student_id, password)
     LoginJS->>LoginJS: check _lockedOut (max 5 fails / 60s)
     LoginJS->>API: POST /api/v1/student/login<br/>{ student_id, password }
+    API-->>LoginJS: { success, requires_otp: true, otp_token }
+    LoginJS->>Browser: Hide login form, show OTP form
+    
+    Browser->>LoginJS: form submit (otp_code)
+    LoginJS->>API: POST /api/v1/student/login/verify-otp<br/>{ otp_token, otp_code }
     API-->>LoginJS: { success, data: { token, student: { full_name } } }
+    
     LoginJS->>SessionStorage: setItem('student_token', token)
     LoginJS->>SessionStorage: setItem('student_name', full_name)
     LoginJS->>Browser: location.href = 'dashboard.html'
@@ -346,8 +352,8 @@ sequenceDiagram
 #### `js/config.js` — Central Configuration
 ```javascript
 const APP_CONFIG = Object.freeze({
-    API_BASE_URL: "https://api.eightyeightevents.me/api/v1",
-    AI_BASE_URL:  "https://ai.eightyeightevents.me",
+    API_BASE_URL: "https://api.galalabot.app/api/v1",
+    AI_BASE_URL:  "https://ai.galalabot.app",
     ENDPOINTS: Object.freeze({
         STUDENT_LOGIN:            "/student/login",
         STUDENT_LOGOUT:           "/student/logout",
@@ -540,7 +546,7 @@ stateDiagram-v2
 
 ## 6. API Documentation
 
-> **Base URL:** `https://api.eightyeightevents.me/api/v1`
+> **Base URL:** `https://api.galalabot.app/api/v1`
 > All requests include `Accept: application/json`. Authenticated endpoints require `Authorization: Bearer <token>`.
 
 ---
@@ -560,7 +566,47 @@ stateDiagram-v2
 }
 ```
 
-**Success Response (inferred):**
+**Success Response:**
+```json
+{
+  "success": true,
+  "requires_otp": true,
+  "otp_token": "64-character-challenge-token",
+  "message": "Verification code sent to your email."
+}
+```
+
+**Failure Response:**
+```json
+{
+  "success": false,
+  "message": "Invalid student ID or password."
+}
+```
+
+**Frontend Behavior:**
+- On success: Stores `otp_token` temporarily, hides login form, shows OTP form.
+- On failure: increments `_failCount`; after 5 failures, 60-second lockout.
+- Brute-force protection is **client-side only**.
+
+---
+
+### POST `/student/login/verify-otp`
+| Property | Value |
+|---|---|
+| **Method** | POST |
+| **Auth Required** | No |
+| **Content-Type** | application/json |
+
+**Request Body:**
+```json
+{
+  "otp_token": "64-character-challenge-token",
+  "otp_code": "123456"
+}
+```
+
+**Success Response:**
 ```json
 {
   "success": true,
@@ -573,25 +619,9 @@ stateDiagram-v2
 }
 ```
 
-**Failure Response (inferred):**
-```json
-{
-  "success": false,
-  "message": "Invalid student ID or password."
-}
-```
-
 **Frontend Behavior:**
-- On success: token + name → sessionStorage → redirect to `dashboard.html`
-- On failure: increment `_failCount`; after 5 failures, 60-second lockout
-- Brute-force protection is **client-side only**
-
-**Validation Rules (client):** None — raw values sent to API.
-
-**Security Risks:**
-- Password sent in plaintext JSON body over HTTPS (acceptable, standard REST pattern)
-- No CSRF token (stateless Bearer auth, acceptable)
-- Client-side lockout bypassable by page refresh
+- On success: token + name → sessionStorage → redirect to `dashboard.html`.
+- On failure: displays error message. If "too many attempts", returns user to login form.
 
 ---
 
@@ -763,7 +793,7 @@ default-src 'self';
 script-src 'self';
 style-src 'self' 'unsafe-inline';
 font-src 'self';
-connect-src https://api.eightyeightevents.me https://ai.eightyeightevents.me;
+connect-src https://api.galalabot.app https://ai.galalabot.app;
 img-src 'self' data:;
 frame-ancestors 'none';
 base-uri 'self';
@@ -836,8 +866,8 @@ This function is duplicated across 3 files — should be centralized (see §14).
 
 ### Domain Configuration
 - Frontend domain: Unknown (not in source code).
-- API: `api.eightyeightevents.me` — HTTPS, subdomain of `eightyeightevents.me`
-- AI: `ai.eightyeightevents.me` — HTTPS, subdomain of `eightyeightevents.me`
+- API: `api.galalabot.app` — HTTPS, subdomain of `galalabot.app`
+- AI: `ai.galalabot.app` — HTTPS, subdomain of `galalabot.app`
 
 ### Recommended Server Configuration (Not Yet Implemented)
 For production deployment, the web server should add:
@@ -855,7 +885,7 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 ## 9. AI / ML Services
 
 ### Current State: Not Wired
-- `APP_CONFIG.AI_BASE_URL = "https://ai.eightyeightevents.me"` is defined in `config.js` and whitelisted in the CSP `connect-src` directive.
+- `APP_CONFIG.AI_BASE_URL = "https://ai.galalabot.app"` is defined in `config.js` and whitelisted in the CSP `connect-src` directive.
 - **No JavaScript code currently calls this endpoint.** The chatbot is entirely a local keyword-matching engine.
 - The AI service URL appears in the CSP `connect-src` whitelist — indicating future integration is planned.
 
@@ -879,7 +909,7 @@ User input
     ↓
 sanitizeInput()
     ↓
-POST https://ai.eightyeightevents.me/[endpoint]
+POST https://ai.galalabot.app/[endpoint]
     Body: { message: sanitizedText, context: "admission|academic" }
     ↓
 AI response (streaming or batch)
@@ -934,8 +964,8 @@ appendMsg('ai', response)
 
 | Variable | Current Location | Purpose | Sensitive? | Example |
 |---|---|---|---|---|
-| API Base URL | `config.js` hardcoded | Backend REST API root | No | `https://api.eightyeightevents.me/api/v1` |
-| AI Base URL | `config.js` hardcoded | AI service root | No | `https://ai.eightyeightevents.me` |
+| API Base URL | `config.js` hardcoded | Backend REST API root | No | `https://api.galalabot.app/api/v1` |
+| AI Base URL | `config.js` hardcoded | AI service root | No | `https://ai.galalabot.app` |
 | Student Login endpoint | `config.js` | POST login | No | `/student/login` |
 | Student Logout endpoint | `config.js` | POST logout | No | `/student/logout` |
 | Student Profile endpoint | `config.js` | GET profile | No | `/student/profile` |
@@ -973,7 +1003,7 @@ npx serve . -p 8080
 # Visit http://localhost:8080
 ```
 
-> **Important:** The app makes API calls to `api.eightyeightevents.me`. Local development will hit the live production API. There is no local mock server or `.env` to switch to a dev API.
+> **Important:** The app makes API calls to `api.galalabot.app`. Local development will hit the live production API. There is no local mock server or `.env` to switch to a dev API.
 
 ### Build Process
 - **None.** No transpilation, no minification, no bundling.
@@ -997,7 +1027,7 @@ npx serve . -p 8080
 ### Common Debug Commands
 - View sessionStorage: `sessionStorage.getItem('student_token')` in DevTools console
 - Clear session (force logout): `sessionStorage.clear()`
-- Simulate API failure: DevTools → Network → block `api.eightyeightevents.me`
+- Simulate API failure: DevTools → Network → block `api.galalabot.app`
 
 ### Testing
 - **No automated tests exist.** No test framework, no test files.
@@ -1105,7 +1135,7 @@ npx serve . -p 8080
 
 13. **Introduce a bundler** (Vite recommended) — This resolves TD-01, enables proper module splitting, tree-shaking, and adds a proper development server with HMR.
 
-14. **Wire up the AI service** — `ai.eightyeightevents.me` is configured and CSP-whitelisted. Replace the keyword matcher in `chatbot.js::getResponse()` with a `fetch()` call to the AI API. **This integration is planned — the owner will notify when it is ready to implement. At that point, update §9 (AI/ML Services) and §6 (API Documentation) with the real endpoint contract.**
+14. **Wire up the AI service** — `ai.galalabot.app` is configured and CSP-whitelisted. Replace the keyword matcher in `chatbot.js::getResponse()` with a `fetch()` call to the AI API. **This integration is planned — the owner will notify when it is ready to implement. At that point, update §9 (AI/ML Services) and §6 (API Documentation) with the real endpoint contract.**
 
 15. **Add a 404 page** — Create `404.html` and configure the web server to serve it.
 
@@ -1131,11 +1161,11 @@ npx serve . -p 8080
 
 ### Key Concepts the AI Must Remember
 
-1. **This is a pure static frontend** — no build step, no backend in this repo, no server-side logic. The backend is at `api.eightyeightevents.me`. All JS files now correctly use `type="module"` (TD-01 fixed).
+1. **This is a pure static frontend** — no build step, no backend in this repo, no server-side logic. The backend is at `api.galalabot.app`. All JS files now correctly use `type="module"` (TD-01 fixed).
 
 2. **Authentication is sessionStorage Bearer token** — `student_token` key. All authenticated pages check this at load time. Token is cleared on logout or any non-OK API response.
 
-3. **The chatbot is a local keyword matcher** — it does NOT call the AI API yet. The AI endpoint (`ai.eightyeightevents.me`) is configured and CSP-whitelisted but unused. **AI integration is pending — owner will request it when ready.**
+3. **The chatbot is a local keyword matcher** — it does NOT call the AI API yet. The AI endpoint (`ai.galalabot.app`) is configured and CSP-whitelisted but unused. **AI integration is pending — owner will request it when ready.**
 
 4. ~~**ES Module / Classic Script mismatch (CRITICAL BUG)**~~ — ✅ **FIXED 2026-05-23.** All pages now use `type="module"` on their script tags.
 
@@ -1196,6 +1226,6 @@ sessionStorage
 |---|---|---|
 | 2026-05-23 | Initial document generated by deep static analysis | — |
 | 2026-05-23 | **TD-01 FIXED** — added `type="module"` to script tags for `dashboard.js`, `vehicle.js`, `chatbot.js` (×2 chatbot pages) | `dashboard.html`, `vehicle.html`, `chatbot.html`, `chatbot-public.html` |
-| *(pending)* | AI service integration (`ai.eightyeightevents.me`) — owner will notify when ready | `chatbot.js`, this document |
+| *(pending)* | AI service integration (`ai.galalabot.app`) — owner will notify when ready | `chatbot.js`, this document |
 
 *End of FRONT_PROJECT_CONTEXT.md — Last updated: 2026-05-23.*

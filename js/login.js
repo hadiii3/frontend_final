@@ -40,9 +40,19 @@ async function handleLogin(e) {
 
     if (data.success) {
       _failCount = 0;
-      sessionStorage.setItem('student_token', data.data.token);
-      sessionStorage.setItem('student_name',  data.data.student.full_name);
-      window.location.href = 'dashboard.html';
+      if (data.requires_otp) {
+        sessionStorage.setItem('temp_otp_token', data.otp_token);
+        
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('otp-form').style.display = 'block';
+        
+        btn.textContent = 'Sign In to Portal';
+        btn.disabled = false;
+      } else {
+        sessionStorage.setItem('student_token', data.data.token);
+        sessionStorage.setItem('student_name',  data.data.student.full_name);
+        window.location.href = 'dashboard.html';
+      }
     } else {
       _failCount++;
       if (_failCount >= MAX_FAILS) {
@@ -76,9 +86,80 @@ async function handleLogin(e) {
   }
 }
 
+async function handleVerifyOtp(e) {
+  e.preventDefault();
+
+  const btn   = document.getElementById('verify-btn');
+  const errEl = document.getElementById('otp-error');
+  const otpCode = document.getElementById('otp-code').value.trim();
+  const otpToken = sessionStorage.getItem('temp_otp_token');
+
+  if (!otpToken) {
+    showLoginForm();
+    return;
+  }
+
+  errEl.style.display = 'none';
+  btn.textContent = 'Verifying…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.VERIFY_OTP}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ otp_token: otpToken, otp_code: otpCode }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      sessionStorage.removeItem('temp_otp_token');
+      sessionStorage.setItem('student_token', data.data.token);
+      sessionStorage.setItem('student_name',  data.data.student.full_name);
+
+      /* Store student_id so change-password.js can mark the flag */
+      const studentId = data.data.student.student_id || '';
+      if (studentId) sessionStorage.setItem('student_id', studentId);
+
+      /* Only force password change on FIRST login (flag not yet set) */
+      if (studentId && localStorage.getItem('pwd_changed_' + studentId)) {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'change-password.html';
+      }
+    } else {
+      errEl.textContent = data.message || 'Invalid or expired verification code.';
+      errEl.style.display = 'block';
+      btn.textContent = 'Verify Code';
+      btn.disabled = false;
+
+      if (data.message && data.message.toLowerCase().includes('too many attempts')) {
+        setTimeout(showLoginForm, 2000);
+      }
+    }
+  } catch {
+    errEl.textContent = 'An error occurred during verification. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = 'Verify Code';
+    btn.disabled = false;
+  }
+}
+
+function showLoginForm() {
+  document.getElementById('otp-form').style.display = 'none';
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('otp-code').value = '';
+  document.getElementById('otp-error').style.display = 'none';
+  sessionStorage.removeItem('temp_otp_token');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('login-form');
-  const tog  = document.getElementById('pwd-toggle');
-  if (form) form.addEventListener('submit', handleLogin);
-  if (tog)  tog.addEventListener('click', togglePwd);
+  const loginForm = document.getElementById('login-form');
+  const otpForm   = document.getElementById('otp-form');
+  const tog       = document.getElementById('pwd-toggle');
+  const backBtn   = document.getElementById('back-to-login');
+  
+  if (loginForm) loginForm.addEventListener('submit', handleLogin);
+  if (otpForm)   otpForm.addEventListener('submit', handleVerifyOtp);
+  if (tog)       tog.addEventListener('click', togglePwd);
+  if (backBtn)   backBtn.addEventListener('click', showLoginForm);
 });

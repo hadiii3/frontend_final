@@ -4,7 +4,9 @@ const APP_CONFIG = Object.freeze({
     ENDPOINTS: Object.freeze({
         /* ── Student / Auth ── */
         STUDENT_LOGIN:            "/student/login",
+        VERIFY_OTP:               "/student/login/verify-otp",
         STUDENT_LOGOUT:           "/student/logout",
+        CHANGE_PASSWORD:          "/student/change-password",
         STUDENT_PROFILE:          "/student/profile",
         STUDENT_VEHICLE:          "/student/vehicle",
         STUDENT_VEHICLE_REQUESTS: "/student/vehicle-requests",

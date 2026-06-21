@@ -41,7 +41,7 @@
       </div>
 
       <h1 class="login-form-title" style="text-align:center;">Welcome back.</h1>
-      <p class="login-form-subtitle" style="text-align:center;">Sign in with your university ID and password.</p>
+      <p class="login-form-subtitle" style="text-align:center;margin-bottom:1.5rem;font-size:.875rem;line-height:1.5;">Use your Student ID and the temporary password sent to your email by Galala IAAS. After entering them, you will receive a one-time verification code by email.</p>
 
       <form class="login-form" id="login-form">
         <div class="form-group">
@@ -87,6 +87,31 @@
         <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">
           Sign In to Portal
         </button>
+      </form>
+
+      <!-- OTP Form (Hidden initially) -->
+      <form class="login-form" id="otp-form" style="display: none;">
+        <div class="form-group">
+          <label class="form-label" for="otp-code">Verification Code</label>
+          <input
+            class="form-input"
+            type="text"
+            id="otp-code"
+            name="otp_code"
+            placeholder="Enter 6-digit code"
+            autocomplete="one-time-code"
+            required
+          />
+        </div>
+
+        <div id="otp-error" style="display:none;padding:var(--space-3) var(--space-4);background:#fee2e2;border-radius:var(--radius-md);color:#991b1b;font-size:.875rem;margin-bottom:var(--space-4);"></div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="verify-btn">
+          Verify Code
+        </button>
+        <div style="text-align:center;margin-top:var(--space-4);">
+          <button type="button" id="back-to-login" style="background:none;border:none;color:var(--col-primary);cursor:pointer;font-weight:600;font-size:.875rem;">&larr; Back to Login</button>
+        </div>
       </form>
 
 
