@@ -96,13 +96,6 @@ async function handleChangePassword(e) {
     const data = await res.json();
 
     if (data.success) {
-      /*
-       * Password changed successfully.
-       * Clear the first-login reminder flag so the dashboard banner
-       * won't show again if the student navigates back this session.
-       */
-      sessionStorage.removeItem('first_login');
-
       document.getElementById('change-pwd-form').reset();
       successEl.style.display = 'flex';
       btn.textContent = 'Redirecting…';

@@ -120,21 +120,6 @@ async function handleVerifyOtp(e) {
       const studentId = data.data.student.student_id || '';
       if (studentId) sessionStorage.setItem('student_id', studentId);
 
-      /*
-       * Always redirect to dashboard — never force the change-password page.
-       *
-       * The old approach used localStorage('pwd_changed_<id>') to decide
-       * whether to redirect. localStorage is device-local, so logging in
-       * from a new browser/device always looked like a "first login" and
-       * incorrectly forced the change-password screen again.
-       *
-       * Per the backend spec, the backend does NOT enforce a password change.
-       * We show a dismissible reminder banner on the dashboard instead.
-       * The 'first_login' sessionStorage flag tells the dashboard to show
-       * it — it only lasts for this browser session and vanishes on logout
-       * or when the tab is closed.
-       */
-      sessionStorage.setItem('first_login', '1');
       window.location.href = 'dashboard.html';
     } else {
       errEl.textContent = data.message || 'Invalid or expired verification code.';

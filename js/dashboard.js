@@ -117,23 +117,4 @@ async function loadDashboard() {
   } catch { /* RT-15: silent — no stack traces exposed */ }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadDashboard();
-
-  /* ── First-login security reminder banner ───────────────────────── */
-  const banner  = document.getElementById('pwd-reminder-banner');
-  const dismiss = document.getElementById('pwd-reminder-dismiss');
-
-  /* Show only if login.js set the first_login flag this session */
-  if (banner && sessionStorage.getItem('first_login')) {
-    banner.style.display = 'flex';
-  }
-
-  /* Dismiss button clears the flag — banner won't reappear this session */
-  if (dismiss) {
-    dismiss.addEventListener('click', () => {
-      if (banner) banner.style.display = 'none';
-      sessionStorage.removeItem('first_login');
-    });
-  }
-});
+document.addEventListener('DOMContentLoaded', loadDashboard);
