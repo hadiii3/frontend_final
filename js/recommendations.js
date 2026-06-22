@@ -41,23 +41,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadSavedProfile();
   initRecButton();
   initAskForm();
-
-  /* Check if local server is alive */
-  await checkServerHealth();
 });
 
-/* ══════════════════════════════════════════════════════════════════
-   SERVER HEALTH CHECK
-══════════════════════════════════════════════════════════════════ */
-async function checkServerHealth() {
-  try {
-    const res = await fetch(`${REC_API}/health`, { signal: AbortSignal.timeout(3000) });
-    if (!res.ok) throw new Error('not ok');
-    document.getElementById('rec-offline-banner').style.display = 'none';
-  } catch {
-    document.getElementById('rec-offline-banner').style.display = 'flex';
-  }
-}
+
 
 /* ══════════════════════════════════════════════════════════════════
    TABS
