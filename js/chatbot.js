@@ -280,13 +280,13 @@ async function send() {
 
 async function sendStudentMessage(text) {
   const clientMsgId = crypto.randomUUID();
-  let url = `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}`;
+  let endpoint = `${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}`;
   if (activeSessionId) {
-    url += `/${activeSessionId}/messages`;
+    endpoint += `/${activeSessionId}/messages`;
   }
 
   try {
-    const res = await apiFetch(url, {
+    const res = await apiFetch(endpoint, {
       method: 'POST',
       body: JSON.stringify({
         message: text,
