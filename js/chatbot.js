@@ -1,8 +1,10 @@
 /* chatbot.js
  * Integration with Galala IAAS Laravel Backend
+ * v9305432: handles 409 PASSWORD_CHANGE_REQUIRED via api.js interceptor
  */
 
 import APP_CONFIG from './config.js';
+import { apiFetch } from './api.js';
 
 /* ── HTML escape helper ──────────────────────────────────────────── */
 function escapeHtml(str) {
@@ -61,9 +63,8 @@ function getHeaders(isGuest = false) {
 async function fetchHistory() {
   if (!isLoggedIn) return;
   try {
-    const res = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_CHATS}`, {
-      headers: getHeaders()
-    });
+    const res = await apiFetch(APP_CONFIG.ENDPOINTS.STUDENT_CHATS);
+    if (res._intercepted) return;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     if (json.success && json.data && json.data.conversations) {
@@ -71,12 +72,10 @@ async function fetchHistory() {
         id: c.uuid,
         title: c.title,
         createdAt: c.last_message_at,
-        messages: [] 
+        messages: []
       }));
     }
-  } catch (err) {
-    console.error('[chatbot] Failed to fetch history:', err);
-  }
+  } catch (err) { /* silent per RT-15 */ }
 }
 
 async function renderSidebar(filter = '') {
@@ -287,17 +286,20 @@ async function sendStudentMessage(text) {
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method: 'POST',
-      headers: getHeaders(false),
       body: JSON.stringify({
         message: text,
         client_message_id: clientMsgId
       })
     });
 
+    if (res._intercepted) {
+      removeTyping(); isPolling = false; disableInput(false);
+      return;
+    }
+
     if (!res.ok) {
-        if (res.status === 409) throw new Error('Conflict: A message is already pending.');
         throw new Error(`HTTP ${res.status}`);
     }
 

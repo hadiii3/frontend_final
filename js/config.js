@@ -8,13 +8,17 @@ const APP_CONFIG = Object.freeze({
         STUDENT_LOGOUT:           "/student/logout",
         CHANGE_PASSWORD:          "/student/change-password",
         STUDENT_PROFILE:          "/student/profile",
+        FORGOT_PASSWORD:          "/student/forgot-password",
+        FORGOT_PASSWORD_RESET:    "/student/forgot-password/reset",
+
+        /* ── Student Features ── */
         STUDENT_VEHICLE:          "/student/vehicle",
         STUDENT_VEHICLE_REQUESTS: "/student/vehicle-requests",
         STUDENT_VEHICLE_HISTORY:  "/student/vehicle-requests/history",
-        
+
         /* ── Student Chatbot ── */
-        STUDENT_CHATS:            "/student/chats", 
-        
+        STUDENT_CHATS:            "/student/chats",
+
         /* ── Guest Chatbot ── */
         GUEST_CHAT_MESSAGES:      "/guest/chat/messages",
     }),

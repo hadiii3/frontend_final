@@ -4,6 +4,7 @@ import APP_CONFIG from "./config.js";
  *   RT-10 : inline onclick="handleLogout" removed from HTML; listener attached here
  *   RT-14 : logout uses keepalive:true + window.location.replace (no Back button)
  *   RT-04 : removed window.handleLogout global exposure
+ *   v9305432: clears must_change_password and student_id on logout
  */
 
 (function () {
@@ -46,9 +47,11 @@ async function handleLogout(e) {
 
   const token = sessionStorage.getItem('student_token');
 
-  /* Clear local state FIRST regardless of API result */
+  /* Clear ALL local auth state FIRST regardless of API result */
   sessionStorage.removeItem('student_token');
   sessionStorage.removeItem('student_name');
+  sessionStorage.removeItem('student_id');
+  sessionStorage.removeItem('must_change_password'); /* v9305432 */
 
   /* Best-effort server-side invalidation using keepalive so the
      request completes even after navigation begins */

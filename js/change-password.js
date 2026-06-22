@@ -1,19 +1,39 @@
-import APP_CONFIG from "./config.js";
-/* change-password.js
- * Forced password change after first login.
- * Student is redirected here immediately after OTP verification.
- * On success, redirected to dashboard.
+import { apiFetch, requireAuth } from "./api.js";
+/* change-password.js — v9305432 update
+ * Supports two modes:
+ *   FORCED   — must_change_password=1 in sessionStorage (arrived from login)
+ *              Back link is hidden, forced-mode notice is shown.
+ *              Student cannot skip.
+ *   VOLUNTARY — must_change_password=0 or absent (arrived from profile/dashboard)
+ *              Normal page with Back link visible.
+ *
  * RT-07 : auth guard redirects on 401/403
  * RT-10 : no inline event handlers
  * RT-13 : client-side validation before API call
+ * v9305432: reads data.must_change_password from success response
  */
 
 /* ── Auth guard ──────────────────────────────────────────────────── */
-(function () {
-  if (!sessionStorage.getItem('student_token')) {
-    window.location.replace('login.html');
-  }
-})();
+if (!requireAuth()) { /* requireAuth redirects to login if no token */ }
+
+/* ── Detect forced mode ──────────────────────────────────────────── */
+const isForced = sessionStorage.getItem('must_change_password') === '1';
+
+document.addEventListener('DOMContentLoaded', () => {
+  /* Show/hide back link based on mode */
+  const backLink    = document.getElementById('back-to-dashboard-link');
+  const forcedNote  = document.getElementById('forced-mode-notice');
+
+  if (backLink)   backLink.style.display   = isForced ? 'none' : 'inline-flex';
+  if (forcedNote) forcedNote.style.display = isForced ? 'block' : 'none';
+
+  const form = document.getElementById('change-pwd-form');
+  if (form) form.addEventListener('submit', handleChangePassword);
+
+  makeToggle('current-password', 'eye-current');
+  makeToggle('new-password',     'eye-new');
+  makeToggle('confirm-password', 'eye-confirm');
+});
 
 /* ── Password visibility toggle ─────────────────────────────────── */
 function makeToggle(inputId, iconId) {
@@ -71,31 +91,25 @@ async function handleChangePassword(e) {
   btn.disabled    = true;
 
   try {
-    const res = await fetch(`${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.CHANGE_PASSWORD}`, {
-      method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Accept':        'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+    const res = await apiFetch('/student/change-password', {
+      method: 'POST',
       body: JSON.stringify({
-        current_password:      current,
-        new_password:          newPwd,
+        current_password:          current,
+        new_password:              newPwd,
         new_password_confirmation: confirm,
       }),
     });
 
-    /* Auth failures → back to login */
-    if (res.status === 401 || res.status === 403) {
-      sessionStorage.removeItem('student_token');
-      sessionStorage.removeItem('student_name');
-      window.location.replace('login.html');
-      return;
-    }
+    /* apiFetch handles 401 globally — check for its sentinel */
+    if (res._intercepted) return;
 
     const data = await res.json();
 
     if (data.success) {
+      /* v9305432: backend returns data.must_change_password=false on success */
+      const nowForced = data.data?.must_change_password === true;
+      sessionStorage.setItem('must_change_password', nowForced ? '1' : '0');
+
       document.getElementById('change-pwd-form').reset();
       successEl.style.display = 'flex';
       btn.textContent = 'Redirecting…';
@@ -115,13 +129,3 @@ async function handleChangePassword(e) {
     btn.disabled    = false;
   }
 }
-
-/* ── Init ────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('change-pwd-form');
-  if (form) form.addEventListener('submit', handleChangePassword);
-
-  makeToggle('current-password', 'eye-current');
-  makeToggle('new-password',     'eye-new');
-  makeToggle('confirm-password', 'eye-confirm');
-});

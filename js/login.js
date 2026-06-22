@@ -1,5 +1,9 @@
 import APP_CONFIG from "./config.js";
-/* login.js — RT-08: brute-force lockout | RT-10: no inline handlers */
+/* login.js — v9305432 update
+ * RT-08: brute-force lockout
+ * RT-10: no inline handlers
+ * v9305432: reads must_change_password from OTP response, conditional redirect
+ */
 
 let _failCount = 0;
 const MAX_FAILS = 5;
@@ -42,19 +46,25 @@ async function handleLogin(e) {
       _failCount = 0;
       if (data.requires_otp) {
         sessionStorage.setItem('temp_otp_token', data.otp_token);
-        
+
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('otp-form').style.display = 'block';
-        
+
         btn.textContent = 'Sign In to Portal';
         btn.disabled = false;
       } else {
+        /* Non-OTP path (fallback) */
         sessionStorage.setItem('student_token', data.data.token);
         sessionStorage.setItem('student_name',  data.data.student.full_name);
         window.location.href = 'dashboard.html';
       }
     } else {
       _failCount++;
+      /* v9305432: handle 503 — backend cannot send OTP email */
+      const msg = (res.status === 503)
+        ? 'Unable to send verification code. Please try again later.'
+        : (data.message || 'Invalid student ID or password.');
+
       if (_failCount >= MAX_FAILS) {
         _lockedOut = true;
         btn.textContent = 'Locked (60s)';
@@ -72,7 +82,7 @@ async function handleLogin(e) {
           }
         }, 1000);
       } else {
-        errEl.textContent = data.message || 'Invalid student ID or password.';
+        errEl.textContent = msg;
         errEl.style.display = 'flex';
         btn.textContent = 'Sign In to Portal';
         btn.disabled = false;
@@ -89,9 +99,9 @@ async function handleLogin(e) {
 async function handleVerifyOtp(e) {
   e.preventDefault();
 
-  const btn   = document.getElementById('verify-btn');
-  const errEl = document.getElementById('otp-error');
-  const otpCode = document.getElementById('otp-code').value.trim();
+  const btn     = document.getElementById('verify-btn');
+  const errEl   = document.getElementById('otp-error');
+  const otpCode  = document.getElementById('otp-code').value.trim();
   const otpToken = sessionStorage.getItem('temp_otp_token');
 
   if (!otpToken) {
@@ -120,14 +130,27 @@ async function handleVerifyOtp(e) {
       const studentId = data.data.student.student_id || '';
       if (studentId) sessionStorage.setItem('student_id', studentId);
 
-      window.location.href = 'dashboard.html';
+      /* v9305432: read must_change_password from response */
+      const mustChange = data.data.must_change_password === true
+                      || data.data.student?.must_change_password === true;
+
+      sessionStorage.setItem('must_change_password', mustChange ? '1' : '0');
+
+      if (mustChange) {
+        /* Forced: redirect to change-password; back link will be hidden there */
+        window.location.href = 'change-password.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+
     } else {
       errEl.textContent = data.message || 'Invalid or expired verification code.';
       errEl.style.display = 'block';
       btn.textContent = 'Verify Code';
       btn.disabled = false;
 
-      if (data.message && data.message.toLowerCase().includes('too many attempts')) {
+      /* 429: too many attempts — force back to login step */
+      if (res.status === 429 || (data.message && data.message.toLowerCase().includes('too many attempts'))) {
         setTimeout(showLoginForm, 2000);
       }
     }
@@ -152,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const otpForm   = document.getElementById('otp-form');
   const tog       = document.getElementById('pwd-toggle');
   const backBtn   = document.getElementById('back-to-login');
-  
+
   if (loginForm) loginForm.addEventListener('submit', handleLogin);
   if (otpForm)   otpForm.addEventListener('submit', handleVerifyOtp);
   if (tog)       tog.addEventListener('click', togglePwd);

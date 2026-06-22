@@ -1,10 +1,11 @@
-import APP_CONFIG from "./config.js";
-/* dashboard.js
- * Fixes applied:
+import { apiFetch, requireAuth, requirePasswordChanged } from "./api.js";
+/* dashboard.js — v9305432 update
  *   RT-02 : faculty.name and student_id now escaped before innerHTML injection
  *   RT-07 : checks !response.ok (not just 401) for robust auth guard
- *   RT-15 : console.error removed
+ *   RT-15 : no console.error exposed
  *   RT-20 : null-safe guards on full_name, gpa, faculty, credits (crash prevention)
+ *   v9305432: new profile fields (date_of_birth, faculty.sector, faculty.field,
+ *             faculty.credit_hours, credits_required); must_change_password redirect
  */
 
 /* ── HTML escape helper (RT-02) ──────────────────────────────────── */
@@ -19,28 +20,14 @@ function escapeHtml(str) {
 }
 
 async function loadDashboard() {
-  const token = sessionStorage.getItem('student_token');
-
-  if (!token) {
-    window.location.replace('login.html');
-    return;
-  }
+  /* requireAuth redirects to login if no token */
+  if (!requireAuth()) return;
 
   try {
-    const response = await fetch(
-      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_PROFILE}`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
-    );
+    const response = await apiFetch('/student/profile');
 
-    /* Only redirect to login on actual auth failures (401 / 403).
-       For other errors (network down, 500, etc.) stay on the page
-       to avoid an infinite login ↔ dashboard loop. */
-    if (response.status === 401 || response.status === 403) {
-      sessionStorage.removeItem('student_token');
-      sessionStorage.removeItem('student_name');
-      window.location.replace('login.html');
-      return;
-    }
+    /* apiFetch handles 401 and 409 globally — check sentinel */
+    if (response._intercepted) return;
 
     if (!response.ok) {
       /* Server error — show a visible message, don't redirect */
@@ -52,6 +39,15 @@ async function loadDashboard() {
     const { data } = await response.json();
 
     if (data) {
+      /* v9305432: if must_change_password is true, redirect immediately */
+      if (data.must_change_password === true) {
+        sessionStorage.setItem('must_change_password', '1');
+        window.location.replace('change-password.html');
+        return;
+      }
+      /* Mark as not forced if profile says so */
+      sessionStorage.setItem('must_change_password', '0');
+
       /* ── RT-20: Null-safe name handling ───────────────────────── */
       const fullName       = (typeof data.full_name === 'string' && data.full_name.trim()) ? data.full_name.trim() : 'Student';
       const firstName      = fullName.split(' ')[0] || fullName;
@@ -77,19 +73,35 @@ async function loadDashboard() {
         el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/></svg> Student ID: ${escapeHtml(data.student_id)}`;
       });
 
+      /* ── Personal info fields ────────────────────────────────── */
+      const emailEl = document.querySelector('.info-value.email');
+      if (emailEl) emailEl.textContent = data.email || '—';
+
+      /* v9305432: date_of_birth — show "Not provided" if null */
+      const dobEl = document.querySelector('.info-value.dob');
+      if (dobEl) dobEl.textContent = data.date_of_birth || 'Not provided';
+
+      /* v9305432: faculty sector */
+      const sectorEl = document.querySelector('.info-value.faculty-sector');
+      if (sectorEl) sectorEl.textContent = (data.faculty && data.faculty.sector) ? data.faculty.sector : '—';
+
+      /* v9305432: faculty field */
+      const fieldEl = document.querySelector('.info-value.faculty-field');
+      if (fieldEl) fieldEl.textContent = (data.faculty && data.faculty.field) ? data.faculty.field : '—';
+
+      /* v9305432: faculty credit_hours (from faculty object — do not calculate on frontend) */
+      const facultyCreditsEl = document.querySelector('.info-value.faculty-credits');
+      if (facultyCreditsEl) {
+        const fCredits = (data.faculty && data.faculty.credit_hours != null) ? data.faculty.credit_hours : '—';
+        facultyCreditsEl.textContent = fCredits !== '—' ? `${fCredits} hours` : '—';
+      }
+
       /* ── RT-20: Null-safe GPA (.toFixed() throws on null/undefined) ── */
       const gpa    = (typeof data.gpa === 'number' && isFinite(data.gpa)) ? data.gpa : 0;
       const gpaStr = gpa.toFixed(2);
 
       const identityBadge = document.querySelector('.identity-badge');
       if (identityBadge) identityBadge.textContent = `GPA: ${gpaStr} / 4.00`;
-
-      const emailEl = document.querySelector('.info-value.email');
-      if (emailEl) emailEl.textContent = data.email || '—';
-
-      /* RT-19: Populate DOB from API — no longer hardcoded in HTML */
-      const dobEl = document.querySelector('.info-value.dob');
-      if (dobEl) dobEl.textContent = data.date_of_birth || '—';
 
       const gpaValue = document.querySelector('.gpa-value');
       if (gpaValue) gpaValue.textContent = gpaStr;
@@ -100,10 +112,10 @@ async function loadDashboard() {
         gpaRingFill.style.strokeDashoffset = 238.76 * (1 - pct);
       }
 
-      /* ── RT-20: Null-safe credits — guard division by zero ────── */
+      /* ── RT-20 + v9305432: credits_required is student snapshot — use as-is ── */
       const completed = (typeof data.credits_completed === 'number') ? data.credits_completed : 0;
       const required  = (typeof data.credits_required  === 'number' && data.credits_required > 0) ? data.credits_required : 1;
-      const creditPct = Math.min((completed / required) * 100, 100); // clamp to 100%
+      const creditPct = Math.min((completed / required) * 100, 100);
 
       const creditText = document.querySelector('.credit-bar-wrap span:nth-child(2)');
       if (creditText) creditText.textContent = `${completed} / ${data.credits_required ?? '—'}`;

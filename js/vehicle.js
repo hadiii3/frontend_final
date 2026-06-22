@@ -1,4 +1,5 @@
 import APP_CONFIG from "./config.js";
+import { apiFetch } from "./api.js";
 /* vehicle.js
  * Fixes applied:
  *   RT-02 : ALL API data escaped with escapeHtml() before innerHTML injection
@@ -34,18 +35,10 @@ async function loadVehicleState() {
   if (!token) { window.location.replace('login.html'); return; }
 
   try {
-    const response = await fetch(
-      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE}`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
-    );
+    const response = await apiFetch(APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE);
 
-    /* Only redirect on real auth failures — not server errors */
-    if (response.status === 401 || response.status === 403) {
-      sessionStorage.removeItem('student_token');
-      sessionStorage.removeItem('student_name');
-      window.location.replace('login.html');
-      return;
-    }
+    /* apiFetch handles 401 and 409 globally */
+    if (response._intercepted) return;
 
     if (!response.ok) return; /* server error — stay on page */
 
@@ -140,12 +133,8 @@ async function loadVehicleState() {
 
 async function loadVehicleHistory(token) {
   try {
-    const response = await fetch(
-      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_HISTORY}`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
-    );
-
-    /* RT-07: guard non-OK responses (e.g. expired token) */
+    const response = await apiFetch(APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_HISTORY);
+    if (response._intercepted) return;
     if (!response.ok) return;
 
     const result      = await response.json();
@@ -251,14 +240,12 @@ async function submitVehicle(e) {
   if (errEl) errEl.style.display = 'none';
 
   try {
-    const response = await fetch(
-      `${APP_CONFIG.API_BASE_URL}${APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_REQUESTS}`,
-      {
-        method:  'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body:    JSON.stringify({ vehicle_type: type, vehicle_model: model, vehicle_color: color, plate_number: plate }),
-      }
-    );
+    const response = await apiFetch(APP_CONFIG.ENDPOINTS.STUDENT_VEHICLE_REQUESTS, {
+      method: 'POST',
+      body: JSON.stringify({ vehicle_type: type, vehicle_model: model, vehicle_color: color, plate_number: plate }),
+    });
+
+    if (response._intercepted) return;
     const result = await response.json();
 
     if (result.success) {
