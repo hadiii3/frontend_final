@@ -12,7 +12,7 @@ import { requireAuth } from './api.js';
 
 if (!requireAuth()) { /* redirects to login if no token */ }
 
-const REC_API = 'http://46.101.138.186:8055';
+const REC_API = 'https://soc.galalabot.app';
 const PROFILE_KEY = 'rec_profile';
 
 /* ── State ───────────────────────────────────────────────────────── */
