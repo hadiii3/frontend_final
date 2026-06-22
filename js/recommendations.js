@@ -12,7 +12,7 @@ import { requireAuth } from './api.js';
 
 if (!requireAuth()) { /* redirects to login if no token */ }
 
-const REC_API = 'http://127.0.0.1:8055';
+const REC_API = 'http://46.101.138.186:8055';
 const PROFILE_KEY = 'rec_profile';
 
 /* ── State ───────────────────────────────────────────────────────── */
@@ -309,8 +309,7 @@ async function getRecommendations() {
       <div class="rec-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <h3>Could not get recommendations</h3>
-        <p>${esc(err.message || 'Is your local Python server running?')}</p>
-        <p style="margin-top:8px;font-size:.8125rem;"><code>python -m app.main</code></p>
+        <p>${esc(err.message || 'Is the recommendation server running?')}</p>
       </div>`;
   } finally {
     btn.disabled = false;
